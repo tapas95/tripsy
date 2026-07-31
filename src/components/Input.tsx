@@ -14,12 +14,14 @@ interface InputProps extends TextInputProps {
   label?: string;
   error?: string;
   isPassword?: boolean;
+  leftIcon?: React.ReactNode;
 }
 
 export const Input: React.FC<InputProps> = ({
   label,
   error,
   isPassword = false,
+  leftIcon,
   style,
   secureTextEntry,
   ...props
@@ -47,12 +49,15 @@ export const Input: React.FC<InputProps> = ({
           },
         ]}
       >
+        {leftIcon ? <View style={styles.leftIconContainer}>{leftIcon}</View> : null}
+
         <TextInput
           style={[styles.input, { color: colors.textPrimary }, style]}
           placeholderTextColor={colors.textMuted}
           secureTextEntry={isPassword && !showPassword}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
+          textAlignVertical="center"
           {...props}
         />
 
@@ -90,23 +95,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     height: 52,
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1.5,
     paddingHorizontal: 16,
+  },
+  leftIconContainer: {
+    marginRight: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   input: {
     flex: 1,
     fontSize: 15,
     fontWeight: '500',
     height: '100%',
+    paddingVertical: 0,
+    includeFontPadding: false,
   },
   toggleBtn: {
     paddingLeft: 8,
-  },
-  toggleText: {
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0.5,
   },
   errorText: {
     fontSize: 12,

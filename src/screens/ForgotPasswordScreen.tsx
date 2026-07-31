@@ -17,7 +17,7 @@ import { Button } from '../components/Button';
 import { resetPasswordForEmail } from '../api/auth';
 
 interface ForgotPasswordScreenProps {
-  onNavigateToLogin: () => void;
+  onNavigateToLogin?: () => void;
 }
 
 export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
@@ -89,7 +89,7 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
             </Text>
             <Button
               title="Return to Sign In"
-              onPress={onNavigateToLogin}
+              onPress={() => onNavigateToLogin?.()}
               style={styles.returnBtn}
             />
           </View>

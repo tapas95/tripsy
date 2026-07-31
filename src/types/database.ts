@@ -68,19 +68,23 @@ export interface Database {
       };
       trips: {
         Row: Trip;
-        Insert: Omit<Trip, 'id' | 'invite_code' | 'created_at'> & {
+        Insert: {
           id?: string;
+          name: string;
           start_date?: string | null;
           end_date?: string | null;
           currency?: string;
           invite_code?: string;
+          created_by: string;
           created_at?: string;
         };
-        Update: Partial<Omit<Trip, 'id'>>;
+        Update: Partial<Trip>;
       };
       trip_members: {
         Row: TripMember;
-        Insert: Omit<TripMember, 'joined_at'> & {
+        Insert: {
+          trip_id: string;
+          user_id: string;
           role?: TripRole;
           joined_at?: string;
         };
@@ -88,15 +92,18 @@ export interface Database {
       };
       expenses: {
         Row: Expense;
-        Insert: Omit<Expense, 'id' | 'created_at'> & {
+        Insert: {
           id?: string;
+          trip_id: string;
+          amount: number;
           category?: string;
           date?: string;
           note?: string | null;
+          paid_by_user_id: string;
           receipt_url?: string | null;
           created_at?: string;
         };
-        Update: Partial<Omit<Expense, 'id'>>;
+        Update: Partial<Expense>;
       };
       expense_splits: {
         Row: ExpenseSplit;
@@ -105,12 +112,25 @@ export interface Database {
       };
       settlements: {
         Row: Settlement;
-        Insert: Omit<Settlement, 'id' | 'settled_at'> & {
+        Insert: {
           id?: string;
+          trip_id: string;
+          from_user_id: string;
+          to_user_id: string;
+          amount: number;
           settled_at?: string;
         };
-        Update: Partial<Omit<Settlement, 'id'>>;
+        Update: Partial<Settlement>;
       };
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      [_ in never]: never;
+    };
+    Enums: {
+      [_ in never]: never;
     };
   };
 }
