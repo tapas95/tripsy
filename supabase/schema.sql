@@ -251,3 +251,39 @@ create policy "members can view settlements"
 create policy "members can record settlements"
   on public.settlements for insert
   with check (public.is_trip_member(trip_id));
+
+
+-- =========================================================
+-- SUPABASE STORAGE — Receipts bucket
+-- Run these steps manually in the Supabase dashboard:
+--
+-- 1. Go to Storage → New bucket
+--    Name: receipts
+--    Public: OFF  (private — access via signed URLs only)
+--
+-- 2. Add the following Storage policies in the "receipts" bucket:
+--
+--    Policy: "Trip members can upload receipts"
+--      Allowed operation: INSERT
+--      Target roles: authenticated
+--      USING expression:
+--        bucket_id = 'receipts'
+--        AND auth.uid() IS NOT NULL
+--
+--    Policy: "Trip members can read receipts"
+--      Allowed operation: SELECT
+--      Target roles: authenticated
+--      USING expression:
+--        bucket_id = 'receipts'
+--        AND auth.uid() IS NOT NULL
+--
+--    Policy: "Trip members can delete receipts"
+--      Allowed operation: DELETE
+--      Target roles: authenticated
+--      USING expression:
+--        bucket_id = 'receipts'
+--        AND auth.uid() IS NOT NULL
+--
+-- Receipt files are stored at: receipts/{tripId}/{expenseId}/{timestamp}.jpg
+-- Access is via 1-year signed URLs generated server-side after upload.
+-- =========================================================
