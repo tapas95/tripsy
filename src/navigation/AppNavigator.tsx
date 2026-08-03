@@ -14,6 +14,8 @@ import { TripListScreen } from '../screens/TripListScreen';
 import { TripDetailScreen } from '../screens/TripDetailScreen';
 import { TripSettingsScreen } from '../screens/TripSettingsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { ExpenseDetailScreen } from '../screens/ExpenseDetailScreen';
+import { SettingsScreen } from '../screens/SettingsScreen';
 
 // Modals
 import { CreateTripModal } from '../components/CreateTripModal';
@@ -21,6 +23,7 @@ import { JoinTripModal } from '../components/JoinTripModal';
 import { AddExpenseModal } from '../components/AddExpenseModal';
 
 import { TripWithRole } from '../api/trips';
+import { ExpenseWithDetails } from '../api/expenses';
 
 // ─── Stack definitions ────────────────────────────────────────────────────────
 
@@ -34,7 +37,9 @@ export type AppStackParamList = {
   TripList: undefined;
   TripDetail: { trip: TripWithRole };
   TripSettings: { trip: TripWithRole };
+  ExpenseDetail: { expense: ExpenseWithDetails; trip: TripWithRole };
   Profile: undefined;
+  Settings: undefined;
 };
 
 const AuthNav = createNativeStackNavigator<AuthStackParamList>();
@@ -82,6 +87,7 @@ const AppStack: React.FC = () => {
               onCreateTripPress={() => setShowCreateModal(true)}
               onJoinTripPress={() => setShowJoinModal(true)}
               onProfilePress={() => navigation.push('Profile')}
+              onSettingsPress={() => navigation.push('Settings')}
             />
           )}
         </AppNav.Screen>
@@ -96,6 +102,20 @@ const AppStack: React.FC = () => {
                 setShowAddExpense(true);
               }}
               onSettingsPress={() => navigation.push('TripSettings', { trip: route.params.trip })}
+              onExpensePress={(expense) =>
+                navigation.push('ExpenseDetail', { expense, trip: route.params.trip })
+              }
+            />
+          )}
+        </AppNav.Screen>
+
+        <AppNav.Screen name="ExpenseDetail">
+          {({ route, navigation }) => (
+            <ExpenseDetailScreen
+              expense={route.params.expense}
+              trip={route.params.trip}
+              onBack={() => navigation.goBack()}
+              onDeleted={() => navigation.goBack()}
             />
           )}
         </AppNav.Screen>
@@ -112,6 +132,12 @@ const AppStack: React.FC = () => {
         <AppNav.Screen name="Profile">
           {({ navigation }) => (
             <ProfileScreen onBack={() => navigation.goBack()} />
+          )}
+        </AppNav.Screen>
+
+        <AppNav.Screen name="Settings">
+          {({ navigation }) => (
+            <SettingsScreen onBack={() => navigation.goBack()} />
           )}
         </AppNav.Screen>
       </AppNav.Navigator>
