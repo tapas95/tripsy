@@ -21,6 +21,7 @@ interface TripListScreenProps {
   onCreateTripPress: () => void;
   onJoinTripPress: () => void;
   onProfilePress: () => void;
+  onSettingsPress: () => void;
 }
 
 export const TripListScreen: React.FC<TripListScreenProps> = ({
@@ -28,6 +29,7 @@ export const TripListScreen: React.FC<TripListScreenProps> = ({
   onCreateTripPress,
   onJoinTripPress,
   onProfilePress,
+  onSettingsPress,
 }) => {
   const { colors } = useTheme();
   const { profile, user, signOut } = useAuth();
@@ -77,6 +79,13 @@ export const TripListScreen: React.FC<TripListScreenProps> = ({
               <Text style={[styles.avatarInitial, { color: colors.marigold }]}>
                 {displayName.charAt(0).toUpperCase()}
               </Text>
+            </Pressable>
+            <Pressable
+              onPress={onSettingsPress}
+              hitSlop={10}
+              style={[styles.iconCircle, { backgroundColor: colors.background, marginLeft: 6 }]}
+            >
+              <Ionicons name="settings-outline" size={17} color={colors.textSecondary} />
             </Pressable>
           </View>
         </View>
