@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getTripExpenses,
   createExpense,
+  updateExpense,
+  deleteExpense,
   getTripSettlements,
   recordSettlement,
   ExpenseWithDetails,
@@ -37,6 +39,31 @@ export const useExpenses = (tripId: string) => {
     },
   });
 
+  const updateExpenseMutation = useMutation({
+    mutationFn: (data: {
+      expenseId: string;
+      updates: {
+        amount?: number;
+        category?: string;
+        date?: string;
+        note?: string | null;
+        paidByUserId?: string;
+        splits?: { userId: string; shareAmount: number }[];
+      };
+    }) => updateExpense(data.expenseId, data.updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['expenses', tripId] });
+    },
+  });
+
+  const deleteExpenseMutation = useMutation({
+    mutationFn: (expenseId: string) => deleteExpense(expenseId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['expenses', tripId] });
+      queryClient.invalidateQueries({ queryKey: ['settlements', tripId] });
+    },
+  });
+
   const settleDebtMutation = useMutation({
     mutationFn: (data: { fromUserId: string; toUserId: string; amount: number }) =>
       recordSettlement({ ...data, tripId }),
@@ -53,6 +80,10 @@ export const useExpenses = (tripId: string) => {
     settlements: settlementsQuery.data || [],
     createExpense: createExpenseMutation.mutateAsync,
     isCreatingExpense: createExpenseMutation.isPending,
+    updateExpense: updateExpenseMutation.mutateAsync,
+    isUpdatingExpense: updateExpenseMutation.isPending,
+    deleteExpense: deleteExpenseMutation.mutateAsync,
+    isDeletingExpense: deleteExpenseMutation.isPending,
     settleDebt: settleDebtMutation.mutateAsync,
     isSettling: settleDebtMutation.isPending,
   };

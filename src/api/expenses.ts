@@ -77,6 +77,76 @@ export const getTripSettlements = async (tripId: string): Promise<Settlement[]> 
   return (data || []) as Settlement[];
 };
 
+export const updateExpense = async (
+  expenseId: string,
+  updates: {
+    amount?: number;
+    category?: string;
+    date?: string;
+    note?: string | null;
+    paidByUserId?: string;
+    splits?: { userId: string; shareAmount: number }[];
+  }
+): Promise<Expense> => {
+  const patch: Record<string, unknown> = {};
+  if (updates.amount     !== undefined) patch.amount           = updates.amount;
+  if (updates.category   !== undefined) patch.category         = updates.category;
+  if (updates.date       !== undefined) patch.date             = updates.date;
+  if (updates.note       !== undefined) patch.note             = updates.note;
+  if (updates.paidByUserId !== undefined) patch.paid_by_user_id = updates.paidByUserId;
+
+  const { data: updated, error } = await (supabase.from('expenses') as any)
+    .update(patch)
+    .eq('id', expenseId)
+    .select()
+    .single();
+
+  if (error || !updated) throw new Error(error?.message || 'Failed to update expense.');
+
+  // If splits are provided, replace them atomically (delete old → insert new)
+  if (updates.splits) {
+    const { error: delError } = await (supabase.from('expense_splits') as any)
+      .delete()
+      .eq('expense_id', expenseId);
+    if (delError) throw new Error(delError.message);
+
+    if (updates.splits.length > 0) {
+      const rows = updates.splits.map((s) => ({
+        expense_id: expenseId,
+        user_id: s.userId,
+        share_amount: s.shareAmount,
+      }));
+      const { error: insError } = await (supabase.from('expense_splits') as any).insert(rows);
+      if (insError) throw new Error(insError.message);
+    }
+  }
+
+  return updated as Expense;
+};
+
+export const deleteExpense = async (expenseId: string): Promise<void> => {
+  // Delete splits first (FK constraint), then the expense row
+  const { error: splitErr } = await (supabase.from('expense_splits') as any)
+    .delete()
+    .eq('expense_id', expenseId);
+  if (splitErr) throw new Error(splitErr.message);
+
+  const { error } = await (supabase.from('expenses') as any)
+    .delete()
+    .eq('id', expenseId);
+  if (error) throw new Error(error.message);
+};
+
+export const getExpenseById = async (expenseId: string): Promise<ExpenseWithDetails> => {
+  const { data, error } = await (supabase.from('expenses') as any)
+    .select('*, paidByProfile:profiles!paid_by_user_id(name, email), splits:expense_splits(*)')
+    .eq('id', expenseId)
+    .single();
+
+  if (error || !data) throw new Error(error?.message || 'Expense not found.');
+  return data as ExpenseWithDetails;
+};
+
 export const recordSettlement = async (settlementData: {
   tripId: string;
   fromUserId: string;
