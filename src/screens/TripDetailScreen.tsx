@@ -19,6 +19,7 @@ import { useExpenses } from '../hooks/useExpenses';
 import { useTripMembers } from '../hooks/useTripMembers';
 import { CurrencyText } from '../components/CurrencyText';
 import { computeBalances } from '../utils/balances';
+import { ExpenseWithDetails } from '../api/expenses';
 
 // ─── Category config ────────────────────────────────────────────────────────
 const CATEGORIES: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string; bg: string }> = {
@@ -35,6 +36,7 @@ interface TripDetailScreenProps {
   onBack: () => void;
   onAddExpensePress: () => void;
   onSettingsPress?: () => void;
+  onExpensePress: (expense: ExpenseWithDetails) => void;
 }
 
 export const TripDetailScreen: React.FC<TripDetailScreenProps> = ({
@@ -42,6 +44,7 @@ export const TripDetailScreen: React.FC<TripDetailScreenProps> = ({
   onBack,
   onAddExpensePress,
   onSettingsPress,
+  onExpensePress,
 }) => {
   const { colors } = useTheme();
   const { expenses, isLoadingExpenses, refetchExpenses, settlements, settleDebt, isSettling } = useExpenses(trip.id);
@@ -210,7 +213,14 @@ export const TripDetailScreen: React.FC<TripDetailScreenProps> = ({
             renderItem={({ item }) => {
               const { icon, color, bg } = catOf(item.category);
               return (
-                <View style={[styles.expenseRow, { backgroundColor: colors.cardSurface, borderColor: colors.cardBorder }]}>
+                <Pressable
+                  onPress={() => onExpensePress(item)}
+                  style={({ pressed }) => [
+                    styles.expenseRow,
+                    { backgroundColor: colors.cardSurface, borderColor: colors.cardBorder },
+                    pressed && { opacity: 0.88, transform: [{ scale: 0.98 }] },
+                  ]}
+                >
                   {/* Category icon */}
                   <View style={[styles.expenseIconBox, { backgroundColor: bg }]}>
                     <Ionicons name={icon} size={20} color={color} />
@@ -234,9 +244,12 @@ export const TripDetailScreen: React.FC<TripDetailScreenProps> = ({
                     </View>
                   </View>
 
-                  {/* Amount — right-aligned */}
-                  <CurrencyText amount={Number(item.amount)} symbol="₹" size={15} color={colors.textPrimary} />
-                </View>
+                  {/* Amount + chevron */}
+                  <View style={{ alignItems: 'flex-end', gap: 2 }}>
+                    <CurrencyText amount={Number(item.amount)} symbol="₹" size={15} color={colors.textPrimary} />
+                    <Ionicons name="chevron-forward-outline" size={13} color={colors.textMuted} />
+                  </View>
+                </Pressable>
               );
             }}
             ListEmptyComponent={
