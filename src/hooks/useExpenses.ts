@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRealtimeTrip } from './useRealtimeTrip';
 import {
   getTripExpenses,
   createExpense,
@@ -11,6 +12,10 @@ import {
 
 export const useExpenses = (tripId: string) => {
   const queryClient = useQueryClient();
+
+  // Start a Realtime channel for this trip. The hook manages its own
+  // subscribe/cleanup lifecycle, so there's nothing extra to do here.
+  useRealtimeTrip(tripId);
 
   const expensesQuery = useQuery<ExpenseWithDetails[]>({
     queryKey: ['expenses', tripId],

@@ -5,6 +5,10 @@ import * as FileSystem from 'expo-file-system';
 //   Storage → New bucket → name: "receipts" → Public: false)
 const BUCKET = 'receipts';
 
+// Separate public bucket for user avatars.
+// Create in Supabase dashboard: Storage → New bucket → name: "avatars" → Public: ON
+const AVATAR_BUCKET = 'avatars';
+
 /**
  * Uploads a local image URI to Supabase Storage under
  * receipts/{tripId}/{expenseId}/{timestamp}.jpg
@@ -85,3 +89,48 @@ export const setExpenseReceiptUrl = async (
 
   if (error) throw new Error(error.message);
 };
+
+/**
+ * Uploads a local image URI as the user's avatar.
+ *
+ * Path: avatars/{userId}.jpg — one file per user, each upload overwrites the previous.
+ * The avatar bucket is PUBLIC so the URL never expires (unlike receipts which use signed URLs).
+ *
+ * Why overwrite instead of a timestamp suffix? Avatars don't need history, and
+ * overwriting keeps storage usage minimal and the URL stable after the first set.
+ */
+export const uploadAvatar = async (
+  localUri: string,
+  userId: string
+): Promise<string> => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Not authenticated');
+
+  const filePath  = `${userId}.jpg`;
+  const uploadUrl = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/${AVATAR_BUCKET}/${filePath}`;
+
+  // x-upsert: true overwrites the existing file so the URL stays the same.
+  const response = await FileSystem.uploadAsync(uploadUrl, localUri, {
+    httpMethod: 'POST',
+    uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+    fieldName: 'file',
+    mimeType: 'image/jpeg',
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+      apikey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? process.env.EXPO_PUBLIC_SUPABASE_KEY ?? '',
+      'x-upsert': 'true',
+    },
+  });
+
+  if (response.status < 200 || response.status >= 300) {
+    throw new Error(`Avatar upload failed (${response.status}): ${response.body}`);
+  }
+
+  // Public bucket → getPublicUrl never expires; no signed URL needed.
+  const { data } = supabase.storage
+    .from(AVATAR_BUCKET)
+    .getPublicUrl(filePath);
+
+  return data.publicUrl;
+};
+

@@ -113,11 +113,12 @@ export const getCurrentProfile = async (userId: string): Promise<Profile | null>
 
 export const updateProfile = async (
   userId: string,
-  updates: { name?: string; defaultCurrency?: string }
+  updates: { name?: string; defaultCurrency?: string; avatarUrl?: string | null }
 ): Promise<void> => {
   const payload: Record<string, any> = {};
   if (updates.name !== undefined)            payload.name             = updates.name.trim();
   if (updates.defaultCurrency !== undefined) payload.default_currency = updates.defaultCurrency;
+  if (updates.avatarUrl       !== undefined) payload.avatar_url       = updates.avatarUrl;
 
   const { error } = await (supabase.from('profiles') as any)
     .update(payload)

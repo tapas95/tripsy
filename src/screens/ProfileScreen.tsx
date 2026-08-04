@@ -8,13 +8,16 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import * as ImagePicker from 'expo-image-picker';
+import { useMutation } from '@tanstack/react-query';
 import { useTheme } from '../theme';
 import { useAuth } from '../hooks/useAuth';
 import { updateProfile } from '../api/auth';
+import { uploadAvatar } from '../api/storage';
 
 interface ProfileScreenProps {
   onBack: () => void;
@@ -26,14 +29,38 @@ const BW  = 1.5;
 
 const VERSION = '1.0.0';
 
+// ─── Permission helpers ────────────────────────────────────────────────────────
+const ensureCameraPermission = async (): Promise<boolean> => {
+  const { status } = await ImagePicker.requestCameraPermissionsAsync();
+  if (status !== 'granted') {
+    Alert.alert('Camera access needed', 'Please allow camera access in Settings to take a photo.');
+    return false;
+  }
+  return true;
+};
+
+const ensureGalleryPermission = async (): Promise<boolean> => {
+  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (status !== 'granted') {
+    Alert.alert('Photo library access needed', 'Please allow photo library access in Settings.');
+    return false;
+  }
+  return true;
+};
+
+// ─── Main screen ───────────────────────────────────────────────────────────────
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
   const { colors } = useTheme();
   const { user, profile, signOut, refreshProfile } = useAuth();
-  const queryClient = useQueryClient();
 
-  const [name, setName] = useState(profile?.name ?? '');
-  const [saved, setSaved] = useState(false);
+  const [name, setName]               = useState(profile?.name ?? '');
+  const [saved, setSaved]             = useState(false);
+  // localAvatarUri holds a freshly picked image URI before/during upload
+  // so we can show it immediately without waiting for the remote URL.
+  const [localAvatarUri, setLocalAvatarUri] = useState<string | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
+  // ── Name save mutation ────────────────────────────────────────────────────
   const updateMutation = useMutation({
     mutationFn: () => updateProfile(user!.id, { name }),
     onSuccess: async () => {
@@ -44,6 +71,63 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
     onError: (e: any) => Alert.alert('Error', e.message),
   });
 
+  // ── Avatar pick → upload → save ───────────────────────────────────────────
+  const handlePickedUri = async (uri: string) => {
+    // Show the image immediately (optimistic preview)
+    setLocalAvatarUri(uri);
+    setIsUploadingAvatar(true);
+    try {
+      const publicUrl = await uploadAvatar(uri, user!.id);
+      await updateProfile(user!.id, { avatarUrl: publicUrl });
+      // Refresh profile so the avatar_url in AuthContext updates everywhere
+      await refreshProfile();
+      // Clear the local URI — we now rely on profile.avatar_url
+      setLocalAvatarUri(null);
+    } catch (e: any) {
+      setLocalAvatarUri(null);
+      Alert.alert('Upload failed', e.message ?? 'Could not upload avatar. Please try again.');
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const handleAvatarPress = () => {
+    // Action sheet pattern — show options without a native ActionSheetIOS dep
+    Alert.alert('Change Avatar', 'Choose a photo source', [
+      {
+        text: 'Camera',
+        onPress: async () => {
+          if (!(await ensureCameraPermission())) return;
+          const result = await ImagePicker.launchCameraAsync({
+            mediaTypes: ['images'],
+            allowsEditing: true,
+            aspect: [1, 1],       // Force square crop — perfect for a circle avatar
+            quality: 0.8,
+          });
+          if (!result.canceled && result.assets[0]) {
+            await handlePickedUri(result.assets[0].uri);
+          }
+        },
+      },
+      {
+        text: 'Photo Library',
+        onPress: async () => {
+          if (!(await ensureGalleryPermission())) return;
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+          });
+          if (!result.canceled && result.assets[0]) {
+            await handlePickedUri(result.assets[0].uri);
+          }
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
   const handleSignOut = () => {
     Alert.alert('Sign Out', 'Sign out of Tripsy?', [
       { text: 'Cancel', style: 'cancel' },
@@ -51,8 +135,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
     ]);
   };
 
-  const initials = (profile?.name ?? user?.email ?? 'T').charAt(0).toUpperCase();
-  const email    = user?.email ?? '';
+  // What to display in the avatar: local preview > remote URL > initials fallback
+  const avatarSource = localAvatarUri ?? profile?.avatar_url ?? null;
+  const initials     = (profile?.name ?? user?.email ?? 'T').charAt(0).toUpperCase();
+  const email        = user?.email ?? '';
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -71,11 +157,41 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
 
         {/* ── Avatar Hero ── */}
         <View style={styles.avatarSection}>
-          <View style={[styles.avatarCircle, { backgroundColor: colors.glowMarigold, borderColor: colors.marigold }]}>
-            <Text style={[styles.avatarInitial, { color: colors.marigold }]}>{initials}</Text>
-          </View>
+          <Pressable
+            onPress={handleAvatarPress}
+            disabled={isUploadingAvatar}
+            style={({ pressed }) => [styles.avatarWrapper, pressed && { opacity: 0.85 }]}
+            accessibilityLabel="Change profile photo"
+            accessibilityRole="button"
+          >
+            {/* Photo or initials */}
+            {avatarSource ? (
+              <Image
+                source={{ uri: avatarSource }}
+                style={[styles.avatarCircle, { borderColor: colors.marigold }]}
+              />
+            ) : (
+              <View style={[styles.avatarCircle, { backgroundColor: colors.glowMarigold, borderColor: colors.marigold }]}>
+                <Text style={[styles.avatarInitial, { color: colors.marigold }]}>{initials}</Text>
+              </View>
+            )}
+
+            {/* Camera badge — bottom-right corner */}
+            <View style={[styles.cameraBadge, { backgroundColor: colors.marigold }]}>
+              {isUploadingAvatar ? (
+                <ActivityIndicator size="small" color="#1B2430" />
+              ) : (
+                <Ionicons name="camera" size={13} color="#1B2430" />
+              )}
+            </View>
+          </Pressable>
+
           <Text style={[styles.heroName, { color: colors.textPrimary }]}>{profile?.name ?? 'Traveller'}</Text>
           <Text style={[styles.heroEmail, { color: colors.textSecondary }]}>{email}</Text>
+
+          {isUploadingAvatar && (
+            <Text style={[styles.uploadingLabel, { color: colors.textMuted }]}>Uploading photo…</Text>
+          )}
         </View>
 
         {/* ── Account ── */}
@@ -108,9 +224,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
           disabled={updateMutation.isPending || !name.trim()}
           style={({ pressed }) => [
             styles.saveBtn,
-            {
-              backgroundColor: saved ? colors.teal : colors.marigold,
-            },
+            { backgroundColor: saved ? colors.teal : colors.marigold },
             pressed && styles.pressed,
           ]}
         >
@@ -169,15 +283,25 @@ const styles = StyleSheet.create({
   topBarTitle: { flex: 1, fontSize: 20, fontWeight: '800', letterSpacing: -0.4, marginHorizontal: 8, textAlign: 'center' },
   content: { padding: PAD },
 
-  // Avatar hero
-  avatarSection: { alignItems: 'center', paddingVertical: 24 },
+  // ── Avatar ──
+  avatarSection:    { alignItems: 'center', paddingVertical: 24 },
+  avatarWrapper:    { position: 'relative', marginBottom: 14 },
   avatarCircle: {
     width: 88, height: 88, borderRadius: 44, borderWidth: 3,
-    justifyContent: 'center', alignItems: 'center', marginBottom: 14,
+    justifyContent: 'center', alignItems: 'center',
   },
-  avatarInitial: { fontSize: 36, fontWeight: '800' },
-  heroName:  { fontSize: 22, fontWeight: '800', letterSpacing: -0.4, marginBottom: 4 },
-  heroEmail: { fontSize: 14, fontWeight: '500' },
+  avatarInitial:    { fontSize: 36, fontWeight: '800' },
+  // Camera badge sits over the bottom-right of the circle
+  cameraBadge: {
+    position: 'absolute', bottom: 0, right: 0,
+    width: 28, height: 28, borderRadius: 14,
+    justifyContent: 'center', alignItems: 'center',
+    // Thin white ring to separate badge from avatar edge
+    borderWidth: 2, borderColor: 'white',
+  },
+  heroName:       { fontSize: 22, fontWeight: '800', letterSpacing: -0.4, marginBottom: 4 },
+  heroEmail:      { fontSize: 14, fontWeight: '500' },
+  uploadingLabel: { fontSize: 12, fontWeight: '500', marginTop: 6 },
 
   sectionLabel: { fontSize: 11, fontWeight: '700', letterSpacing: 1.2, marginBottom: 10, marginTop: 4 },
 

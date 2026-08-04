@@ -9,6 +9,7 @@ export type RootStackParamList = {
   TripDetail: { trip: TripWithRole };
   TripSettings: { trip: TripWithRole };
   ExpenseDetail: { expense: ExpenseWithDetails; trip: TripWithRole };
+  Balances: { trip: TripWithRole };
   Profile: undefined;
   Settings: undefined;
 };

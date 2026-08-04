@@ -1,10 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getUserTrips, createTrip, joinTripByCode, TripWithRole } from '../api/trips';
 import { useAuth } from './useAuth';
+import { useRealtimeTrips } from './useRealtimeTrips';
 
 export const useTrips = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+
+  // Live-sync the trip list whenever membership or trip metadata changes.
+  useRealtimeTrips(user?.id);
 
   const tripsQuery = useQuery<TripWithRole[]>({
     queryKey: ['trips', user?.id],

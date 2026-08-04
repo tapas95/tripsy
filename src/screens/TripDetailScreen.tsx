@@ -37,6 +37,7 @@ interface TripDetailScreenProps {
   onAddExpensePress: () => void;
   onSettingsPress?: () => void;
   onExpensePress: (expense: ExpenseWithDetails) => void;
+  onBalancesPress?: () => void;
 }
 
 export const TripDetailScreen: React.FC<TripDetailScreenProps> = ({
@@ -45,6 +46,7 @@ export const TripDetailScreen: React.FC<TripDetailScreenProps> = ({
   onAddExpensePress,
   onSettingsPress,
   onExpensePress,
+  onBalancesPress,
 }) => {
   const { colors } = useTheme();
   const { expenses, isLoadingExpenses, refetchExpenses, settlements, settleDebt, isSettling } = useExpenses(trip.id);
@@ -268,6 +270,21 @@ export const TripDetailScreen: React.FC<TripDetailScreenProps> = ({
           />
         ) : (
           <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+            {/* Quick-open full balances screen */}
+            {onBalancesPress && (
+              <Pressable
+                onPress={onBalancesPress}
+                style={({ pressed }) => [
+                  styles.balancesLinkBtn,
+                  { backgroundColor: colors.ink },
+                  pressed && { opacity: 0.88 },
+                ]}
+              >
+                <Ionicons name="scale-outline" size={16} color="#F7F6F3" />
+                <Text style={styles.balancesLinkText}>View Full Balances & History</Text>
+                <Ionicons name="arrow-forward-circle-outline" size={16} color="rgba(247,246,243,0.6)" />
+              </Pressable>
+            )}
             {debts.length === 0 ? (
               <View style={styles.emptyState}>
                 <View style={[styles.emptyRing, { borderColor: colors.cardBorder }]}>
@@ -520,5 +537,24 @@ const styles = StyleSheet.create({
     borderRadius: 20, minWidth: 70, alignItems: 'center',
   },
   settleBtnText: { fontSize: 13, fontWeight: '700' },
+
+  // Balances screen link
+  balancesLinkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 13,
+    paddingHorizontal: 16,
+    borderRadius: R,
+    marginBottom: 16,
+  },
+  balancesLinkText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#F7F6F3',
+    textAlign: 'center',
+  },
 });
 

@@ -16,6 +16,7 @@ import { TripSettingsScreen } from '../screens/TripSettingsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { ExpenseDetailScreen } from '../screens/ExpenseDetailScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
+import { BalancesScreen } from '../screens/BalancesScreen';
 
 // Modals
 import { CreateTripModal } from '../components/CreateTripModal';
@@ -38,6 +39,7 @@ export type AppStackParamList = {
   TripDetail: { trip: TripWithRole };
   TripSettings: { trip: TripWithRole };
   ExpenseDetail: { expense: ExpenseWithDetails; trip: TripWithRole };
+  Balances: { trip: TripWithRole };
   Profile: undefined;
   Settings: undefined;
 };
@@ -105,6 +107,16 @@ const AppStack: React.FC = () => {
               onExpensePress={(expense) =>
                 navigation.push('ExpenseDetail', { expense, trip: route.params.trip })
               }
+              onBalancesPress={() => navigation.push('Balances', { trip: route.params.trip })}
+            />
+          )}
+        </AppNav.Screen>
+
+        <AppNav.Screen name="Balances">
+          {({ route, navigation }) => (
+            <BalancesScreen
+              trip={route.params.trip}
+              onBack={() => navigation.goBack()}
             />
           )}
         </AppNav.Screen>
