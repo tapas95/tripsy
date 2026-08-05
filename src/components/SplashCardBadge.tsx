@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme';
 
 export const SplashCardBadge: React.FC = () => {
@@ -29,7 +30,8 @@ export const SplashCardBadge: React.FC = () => {
       >
         <View style={styles.headerRow}>
           <View style={styles.tripPill}>
-            <Text style={styles.tripPillText}>PARIS TRIP ✈️</Text>
+            <Ionicons name="airplane-outline" size={11} color={colors.marigold} style={{ marginRight: 4 }} />
+            <Text style={styles.tripPillText}>PARIS TRIP</Text>
           </View>
           <View style={styles.settledBadge}>
             <Text style={styles.settledText}>SETTLED</Text>
@@ -99,6 +101,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tripPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: 'rgba(242, 169, 59, 0.16)',
     paddingHorizontal: 10,
     paddingVertical: 4,

@@ -138,7 +138,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           <Text style={[styles.footerText, { color: colors.textSecondary }]}>
             Don't have an account?{' '}
           </Text>
-          <Pressable onPress={onNavigateToSignUp}>
+          <Pressable onPress={onNavigateToSignUp} hitSlop={12} style={{ paddingVertical: 4, paddingHorizontal: 4 }}>
             <Text style={[styles.signUpLink, { color: colors.marigold }]}>Sign Up</Text>
           </Pressable>
         </View>

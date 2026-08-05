@@ -253,6 +253,34 @@ create policy "members can record settlements"
   with check (public.is_trip_member(trip_id));
 
 
+-- ---------------------------------------------------------
+-- 7. RPC FUNCTION: JOIN TRIP BY INVITE CODE
+-- Secure function to look up a trip by invite code and add
+-- the caller as a member without exposing public SELECT on trips.
+-- ---------------------------------------------------------
+create or replace function public.join_trip_by_code(p_invite_code text)
+returns setof public.trips as $$
+declare
+  v_trip public.trips%rowtype;
+begin
+  select * into v_trip
+  from public.trips
+  where lower(invite_code) = lower(trim(p_invite_code))
+  limit 1;
+
+  if not found then
+    raise exception 'Invalid invite code. No trip found.';
+  end if;
+
+  insert into public.trip_members (trip_id, user_id, role)
+  values (v_trip.id, auth.uid(), 'member')
+  on conflict (trip_id, user_id) do nothing;
+
+  return query select * from public.trips where id = v_trip.id;
+end;
+$$ language plpgsql security definer;
+
+
 -- =========================================================
 -- SUPABASE STORAGE — Receipts bucket
 -- Run these steps manually in the Supabase dashboard:

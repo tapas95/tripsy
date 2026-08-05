@@ -49,15 +49,26 @@ export const TripListScreen: React.FC<TripListScreenProps> = ({
       {/* ── App Bar (matches TripDetailScreen topBar) ── */}
       <View style={[styles.appBar, { backgroundColor: colors.cardSurface, borderBottomColor: colors.cardBorder }]}>
         <View style={styles.appBarInner}>
-          {/* Left: greeting */}
-          <View style={styles.greetingGroup}>
-            <Text style={[styles.greetingLabel, { color: colors.textSecondary }]}>Good journey,</Text>
-            <Text style={[styles.greetingName, { color: colors.textPrimary }]} numberOfLines={1}>
-              {displayName} ✈️
-            </Text>
-          </View>
+          {/* Left: profile avatar + greeting block (fully clickable) */}
+          <Pressable
+            onPress={onProfilePress}
+            hitSlop={8}
+            style={({ pressed }) => [styles.leftGroup, pressed && { opacity: 0.8 }]}
+          >
+            <View style={[styles.iconCircle, { backgroundColor: colors.glowMarigold, marginRight: 10 }]}>
+              <Text style={[styles.avatarInitial, { color: colors.marigold }]}>
+                {displayName.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+            <View style={styles.greetingGroup}>
+              <Text style={[styles.greetingLabel, { color: colors.textSecondary }]}>Good journey,</Text>
+              <Text style={[styles.greetingName, { color: colors.textPrimary }]} numberOfLines={1}>
+                {displayName}
+              </Text>
+            </View>
+          </Pressable>
 
-          {/* Right: stat chips + profile */}
+          {/* Right: stat chips + settings */}
           <View style={styles.appBarRight}>
             <View style={[styles.chip, { backgroundColor: colors.glowMarigold }]}>
               <Ionicons name="airplane" size={11} color={colors.marigold} />
@@ -72,18 +83,9 @@ export const TripListScreen: React.FC<TripListScreenProps> = ({
               </Text>
             </View>
             <Pressable
-              onPress={onProfilePress}
-              hitSlop={10}
-              style={[styles.iconCircle, { backgroundColor: colors.glowMarigold, marginLeft: 10 }]}
-            >
-              <Text style={[styles.avatarInitial, { color: colors.marigold }]}>
-                {displayName.charAt(0).toUpperCase()}
-              </Text>
-            </Pressable>
-            <Pressable
               onPress={onSettingsPress}
               hitSlop={10}
-              style={[styles.iconCircle, { backgroundColor: colors.background, marginLeft: 6 }]}
+              style={[styles.iconCircle, { backgroundColor: colors.background, marginLeft: 8 }]}
             >
               <Ionicons name="settings-outline" size={17} color={colors.textSecondary} />
             </Pressable>
@@ -205,8 +207,8 @@ export const TripListScreen: React.FC<TripListScreenProps> = ({
 
 // ─── Shared design tokens ──────────────────────────────────────────────────────
 // These mirror TripDetailScreen so both screens feel like one app.
-const APP_BAR_PADDING_TOP = 52;
-const APP_BAR_PADDING_H   = 20;
+const APP_BAR_PADDING_TOP = 44;
+const APP_BAR_PADDING_H   = 16;
 const BORDER_RADIUS_CARD  = 16;
 const BORDER_WIDTH        = 1.5;
 
@@ -217,7 +219,7 @@ const styles = StyleSheet.create({
   appBar: {
     paddingTop: APP_BAR_PADDING_TOP,
     paddingHorizontal: APP_BAR_PADDING_H,
-    paddingBottom: 14,
+    paddingBottom: 12,
     borderBottomWidth: 1,
   },
   appBarInner: {
@@ -225,9 +227,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  greetingGroup: { flex: 1, marginRight: 12 },
+  leftGroup: { flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 12 },
+  greetingGroup: { flex: 1 },
   greetingLabel: { fontSize: 12, fontWeight: '600', letterSpacing: 0.2 },
-  greetingName:  { fontSize: 20, fontWeight: '800', letterSpacing: -0.4, marginTop: 2 },
+  greetingName:  { fontSize: 19, fontWeight: '800', letterSpacing: -0.4, marginTop: 1 },
 
   appBarRight: { flexDirection: 'row', alignItems: 'center' },
   chip: {

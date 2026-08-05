@@ -117,7 +117,7 @@ const SuccessView: React.FC<SuccessViewProps> = ({ fromDisplay, toDisplay, amoun
         <Ionicons name="checkmark-circle" size={52} color={colors.teal} />
       </View>
 
-      <Text style={[styles.successTitle, { color: colors.textPrimary }]}>Settled! 🎉</Text>
+      <Text style={[styles.successTitle, { color: colors.textPrimary }]}>Settled!</Text>
       <Text style={[styles.successSub, { color: colors.textSecondary }]}>
         <Text style={{ fontWeight: '700', color: colors.coral }}>{fromDisplay}</Text>
         {' paid '}
@@ -241,7 +241,7 @@ export const SettleUpModal: React.FC<SettleUpModalProps> = ({
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      animationType="fade"
       onRequestClose={onCancel}
       statusBarTranslucent
     >

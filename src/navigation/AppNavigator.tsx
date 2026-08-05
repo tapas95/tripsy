@@ -58,8 +58,21 @@ const AuthStack: React.FC<{ onPasswordRecovery?: () => void }> = () => {
         animation: 'slide_from_right',
       }}
     >
-      <AuthNav.Screen name="Login"          component={LoginScreen} />
-      <AuthNav.Screen name="SignUp"         component={SignUpScreen} />
+      <AuthNav.Screen name="Login">
+        {({ navigation }) => (
+          <LoginScreen
+            onNavigateToSignUp={() => navigation.navigate('SignUp')}
+            onNavigateToForgotPassword={() => navigation.navigate('ForgotPassword')}
+          />
+        )}
+      </AuthNav.Screen>
+      <AuthNav.Screen name="SignUp">
+        {({ navigation }) => (
+          <SignUpScreen
+            onNavigateToLogin={() => navigation.navigate('Login')}
+          />
+        )}
+      </AuthNav.Screen>
       <AuthNav.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
     </AuthNav.Navigator>
   );

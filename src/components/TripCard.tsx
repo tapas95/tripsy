@@ -9,15 +9,7 @@ interface TripCardProps {
   onPress: () => void;
 }
 
-const CATEGORY_EMOJIS: Record<string, string> = {
-  beach: '🏖',
-  mountain: '⛰',
-  city: '🏙',
-  road: '🛣',
-  forest: '🌲',
-  international: '✈️',
-  default: '📍',
-};
+
 
 export const TripCard: React.FC<TripCardProps> = ({ trip, onPress }) => {
   const { colors } = useTheme();
@@ -46,7 +38,7 @@ export const TripCard: React.FC<TripCardProps> = ({ trip, onPress }) => {
       {/* Top Section: Title + Role Badge */}
       <View style={styles.topRow}>
         <View style={styles.nameGroup}>
-          <Text style={styles.emoji}>📍</Text>
+          <Ionicons name="location-outline" size={18} color={colors.marigold} style={styles.locationIcon} />
           <Text style={[styles.name, { color: colors.textPrimary }]} numberOfLines={1}>
             {trip.name}
           </Text>
@@ -56,11 +48,16 @@ export const TripCard: React.FC<TripCardProps> = ({ trip, onPress }) => {
           styles.rolePill,
           { backgroundColor: isOwner ? colors.glowMarigold : colors.glowTeal },
         ]}>
+          <Ionicons
+            name={isOwner ? 'star-outline' : 'people-outline'}
+            size={11}
+            color={isOwner ? colors.marigold : colors.teal}
+          />
           <Text style={[
             styles.roleText,
             { color: isOwner ? colors.marigold : colors.teal },
           ]}>
-            {isOwner ? '👑 Owner' : '👥 Member'}
+            {isOwner ? 'Owner' : 'Member'}
           </Text>
         </View>
       </View>
@@ -124,9 +121,8 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 8,
   },
-  emoji: {
-    fontSize: 18,
-    marginRight: 8,
+  locationIcon: {
+    marginRight: 6,
   },
   name: {
     fontSize: 17,
@@ -135,9 +131,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   rolePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 9,
     paddingVertical: 4,
     borderRadius: 20,
+    gap: 4,
   },
   roleText: {
     fontSize: 11,

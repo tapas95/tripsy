@@ -170,9 +170,10 @@ export const ReceiptPickerModal: React.FC<ReceiptPickerModalProps> = ({
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      animationType="fade"
       transparent
       onRequestClose={isBusy ? undefined : onClose}
+      statusBarTranslucent
     >
       <Pressable
         style={[styles.backdrop, { backgroundColor: colors.overlay }]}

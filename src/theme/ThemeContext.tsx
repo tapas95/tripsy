@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useColorScheme as useDeviceColorScheme } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemeColors, lightColors, darkColors } from './colors';
 
 export type ThemeMode = 'system' | 'light' | 'dark';
@@ -18,9 +19,24 @@ export interface ThemeProviderProps {
   children: React.ReactNode;
 }
 
+const THEME_STORAGE_KEY = '@tripsy_theme_mode';
+
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const deviceColorScheme = useDeviceColorScheme();
-  const [mode, setMode] = useState<ThemeMode>('system');
+  const [mode, setModeState] = useState<ThemeMode>('system');
+
+  useEffect(() => {
+    AsyncStorage.getItem(THEME_STORAGE_KEY).then((savedMode) => {
+      if (savedMode && (savedMode === 'system' || savedMode === 'light' || savedMode === 'dark')) {
+        setModeState(savedMode as ThemeMode);
+      }
+    });
+  }, []);
+
+  const setMode = (newMode: ThemeMode) => {
+    setModeState(newMode);
+    AsyncStorage.setItem(THEME_STORAGE_KEY, newMode).catch(() => {});
+  };
 
   const activeTheme: 'light' | 'dark' =
     mode === 'system'
@@ -32,11 +48,8 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const colors = activeTheme === 'dark' ? darkColors : lightColors;
 
   const toggleTheme = () => {
-    setMode((prevMode) => {
-      const currentActive =
-        prevMode === 'system' ? (deviceColorScheme === 'dark' ? 'dark' : 'light') : prevMode;
-      return currentActive === 'dark' ? 'light' : 'dark';
-    });
+    const nextMode = activeTheme === 'dark' ? 'light' : 'dark';
+    setMode(nextMode);
   };
 
   return (

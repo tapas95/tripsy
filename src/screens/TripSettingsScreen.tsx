@@ -23,7 +23,7 @@ interface TripSettingsScreenProps {
   onBack: () => void;
 }
 
-const PAD = 20;
+const PAD = 16;
 const R   = 16;
 const BW  = 1.5;
 
@@ -128,38 +128,45 @@ export const TripSettingsScreen: React.FC<TripSettingsScreenProps> = ({ trip, on
         {/* ── Trip Info ── */}
         <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>TRIP INFO</Text>
         <View style={[styles.card, { backgroundColor: colors.cardSurface, borderColor: colors.cardBorder }]}>
-          {/* Name */}
-          <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Trip Name</Text>
-          <View style={[styles.inputRow, { borderColor: colors.cardBorder, backgroundColor: colors.background }]}>
-            <Ionicons name="airplane-outline" size={16} color={colors.textMuted} />
-            <TextInput
-              style={[styles.inputText, { color: colors.textPrimary }]}
-              value={name}
-              onChangeText={setName}
-              placeholder="Trip name"
-              placeholderTextColor={colors.textMuted}
-            />
+          <View style={styles.fieldBlock}>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Trip Name</Text>
+            <View style={[styles.inputRow, { borderColor: colors.cardBorder, backgroundColor: colors.background }]}>
+              <Ionicons name="airplane-outline" size={16} color={colors.textMuted} />
+              <TextInput
+                style={[styles.inputText, { color: colors.textPrimary }]}
+                value={name}
+                onChangeText={setName}
+                placeholder="Trip name"
+                placeholderTextColor={colors.textMuted}
+              />
+            </View>
           </View>
 
           <View style={[styles.divider, { backgroundColor: colors.cardBorder }]} />
 
-          {/* Start Date */}
-          <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Start Date</Text>
-          <DatePickerInput
-            value={startDate ?? undefined}
-            onChange={(d) => setStartDate(d)}
-            placeholder="No start date"
-          />
+          <View style={styles.fieldBlock}>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Start Date</Text>
+            <View style={styles.datePickerContainer}>
+              <DatePickerInput
+                value={startDate ?? undefined}
+                onChange={(d) => setStartDate(d)}
+                placeholder="No start date"
+              />
+            </View>
+          </View>
 
           <View style={[styles.divider, { backgroundColor: colors.cardBorder }]} />
 
-          {/* End Date */}
-          <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>End Date</Text>
-          <DatePickerInput
-            value={endDate ?? undefined}
-            onChange={(d) => setEndDate(d)}
-            placeholder="No end date"
-          />
+          <View style={styles.fieldBlock}>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>End Date</Text>
+            <View style={styles.datePickerContainer}>
+              <DatePickerInput
+                value={endDate ?? undefined}
+                onChange={(d) => setEndDate(d)}
+                placeholder="No end date"
+              />
+            </View>
+          </View>
         </View>
 
         {/* Save button */}
@@ -273,7 +280,7 @@ export const TripSettingsScreen: React.FC<TripSettingsScreenProps> = ({ trip, on
 const styles = StyleSheet.create({
   root: { flex: 1 },
   topBar: {
-    paddingTop: 52, paddingHorizontal: PAD, paddingBottom: 14,
+    paddingTop: 44, paddingHorizontal: PAD, paddingBottom: 12,
     flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1,
   },
   navBtn: { width: 34, height: 34, borderRadius: 17, justifyContent: 'center', alignItems: 'center' },
@@ -285,12 +292,13 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: R, borderWidth: BW, overflow: 'hidden', marginBottom: 16,
   },
-  fieldLabel: { fontSize: 12, fontWeight: '600', paddingHorizontal: 16, paddingTop: 14, paddingBottom: 6 },
+  fieldBlock: { paddingVertical: 12, paddingHorizontal: 14 },
+  fieldLabel: { fontSize: 12, fontWeight: '600', marginBottom: 8 },
   inputRow: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
-    marginHorizontal: 12, marginBottom: 12,
-    borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 12, height: 44,
+    borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 12, height: 46,
   },
+  datePickerContainer: { marginTop: 0 },
   inputText: { flex: 1, fontSize: 15, fontWeight: '600', includeFontPadding: false, paddingVertical: 0 },
   divider: { height: 1 },
 

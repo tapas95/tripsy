@@ -64,7 +64,7 @@ export const JoinTripModal: React.FC<JoinTripModalProps> = ({ visible, onClose, 
   const codeChars = code.split('');
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose} statusBarTranslucent>
+    <Modal visible={visible} animationType="fade" transparent onRequestClose={handleClose} statusBarTranslucent>
       <Pressable style={styles.scrim} onPress={handleClose} />
       <KeyboardAvoidingView
         style={styles.kav}

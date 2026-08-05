@@ -381,7 +381,7 @@ export const BalancesScreen: React.FC<BalancesScreenProps> = ({ trip, onBack }) 
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const PAD = 20;
+const PAD = 16;
 const R = 16;
 
 const styles = StyleSheet.create({
@@ -389,8 +389,8 @@ const styles = StyleSheet.create({
 
   // Header
   header: {
-    paddingTop: 52,
-    paddingBottom: 14,
+    paddingTop: 44,
+    paddingBottom: 12,
     paddingHorizontal: PAD,
     flexDirection: 'row',
     alignItems: 'center',

@@ -22,14 +22,7 @@ import { computeBalances } from '../utils/balances';
 import { ExpenseWithDetails } from '../api/expenses';
 
 // ─── Category config ────────────────────────────────────────────────────────
-const CATEGORIES: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string; bg: string }> = {
-  food:     { icon: 'restaurant-outline', color: '#F2A93B', bg: 'rgba(242,169,59,0.14)'   },
-  travel:   { icon: 'car-outline',        color: '#2F9E8F', bg: 'rgba(47,158,143,0.14)'   },
-  hotel:    { icon: 'bed-outline',        color: '#8B5CF6', bg: 'rgba(139,92,246,0.14)'   },
-  shopping: { icon: 'bag-outline',        color: '#E1574F', bg: 'rgba(225,87,79,0.14)'    },
-  other:    { icon: 'receipt-outline',    color: '#6B7280', bg: 'rgba(107,114,128,0.14)'  },
-};
-const catOf = (c: string) => CATEGORIES[c] ?? CATEGORIES.other;
+import { getCategoryConfig } from '../utils/categories';
 
 interface TripDetailScreenProps {
   trip: TripWithRole;
@@ -213,7 +206,7 @@ export const TripDetailScreen: React.FC<TripDetailScreenProps> = ({
             contentContainerStyle={styles.list}
             showsVerticalScrollIndicator={false}
             renderItem={({ item }) => {
-              const { icon, color, bg } = catOf(item.category);
+              const { icon, color, bg } = getCategoryConfig(item.category);
               return (
                 <Pressable
                   onPress={() => onExpensePress(item)}
@@ -355,8 +348,8 @@ export const TripDetailScreen: React.FC<TripDetailScreenProps> = ({
 };
 
 // ─── Shared tokens (mirrors TripListScreen) ──────────────────────────────────
-const PAD_H = 20;
-const PAD_TOP = 52;
+const PAD_H = 16;
+const PAD_TOP = 44;
 const R = 16;
 const BW = 1.5;
 
@@ -367,7 +360,7 @@ const styles = StyleSheet.create({
   topBar: {
     paddingTop: PAD_TOP,
     paddingHorizontal: PAD_H,
-    paddingBottom: 14,
+    paddingBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: 1,

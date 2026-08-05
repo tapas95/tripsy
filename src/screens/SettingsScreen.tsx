@@ -22,7 +22,7 @@ interface SettingsScreenProps {
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
-const PAD   = 20;
+const PAD   = 16;
 const R     = 16;
 const BW    = 1.5;
 
@@ -32,14 +32,7 @@ const THEME_OPTIONS: { value: ThemeMode; label: string; icon: keyof typeof impor
   { value: 'system', label: 'System', icon: 'phone-portrait-outline' },
 ];
 
-const CURRENCY_OPTIONS = [
-  { code: 'INR', symbol: '₹', label: 'Indian Rupee' },
-  { code: 'USD', symbol: '$', label: 'US Dollar' },
-  { code: 'EUR', symbol: '€', label: 'Euro' },
-  { code: 'GBP', symbol: '£', label: 'British Pound' },
-  { code: 'AED', symbol: 'د.إ', label: 'UAE Dirham' },
-  { code: 'SGD', symbol: 'S$', label: 'Singapore Dollar' },
-];
+
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
@@ -89,37 +82,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
   const { colors, mode, setMode, activeTheme } = useTheme();
   const { user, profile, signOut, refreshProfile } = useAuth();
 
-  const [currency, setCurrency]           = useState(profile?.default_currency ?? 'INR');
-  const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
-  const [savingCurrency, setSavingCurrency]         = useState(false);
   // Notifications: local toggle only (push notifications out of v1 scope)
   const [expenseAlerts, setExpenseAlerts] = useState(true);
   const [settlementAlerts, setSettlementAlerts] = useState(true);
-
-  // ── Actions ────────────────────────────────────────────────────────────
-  const handleSignOut = () => {
-    Alert.alert('Sign Out', 'Sign out of Tripsy?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign Out', style: 'destructive', onPress: () => signOut() },
-    ]);
-  };
-
-  const handleCurrencySelect = useCallback(async (code: string) => {
-    if (code === currency) { setShowCurrencyPicker(false); return; }
-    setSavingCurrency(true);
-    try {
-      await updateProfile(user!.id, { defaultCurrency: code });
-      await refreshProfile();
-      setCurrency(code);
-    } catch (e: any) {
-      Alert.alert('Error', e.message ?? 'Could not update currency.');
-    } finally {
-      setSavingCurrency(false);
-      setShowCurrencyPicker(false);
-    }
-  }, [currency, user, refreshProfile]);
-
-  const selectedCurrency = CURRENCY_OPTIONS.find((c) => c.code === currency) ?? CURRENCY_OPTIONS[0];
 
   // ── UI ─────────────────────────────────────────────────────────────────
   return (
@@ -190,58 +155,16 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
             icon="cash-outline"
             iconColor={colors.marigold}
             iconBg={colors.glowMarigold}
-            label="Default Currency"
-            sublabel={`${selectedCurrency.symbol} ${selectedCurrency.label}`}
-            onPress={() => setShowCurrencyPicker((v) => !v)}
+            label="App Currency"
+            sublabel="Indian Rupee (₹)"
             right={
-              savingCurrency
-                ? <ActivityIndicator size={16} color={colors.marigold} />
-                : <View style={styles.currencyRight}>
-                    <Text style={[styles.currencyCode, { color: colors.marigold, fontFamily: 'IBMPlexMono-Medium' }]}>
-                      {selectedCurrency.code}
-                    </Text>
-                    <Ionicons
-                      name={showCurrencyPicker ? 'chevron-up-outline' : 'chevron-down-outline'}
-                      size={16}
-                      color={colors.textMuted}
-                    />
-                  </View>
+              <Text style={[styles.currencyCode, { color: colors.marigold, fontFamily: 'IBMPlexMono-Medium' }]}>
+                INR (₹)
+              </Text>
             }
-            last={!showCurrencyPicker}
+            last
             colors={colors}
           />
-
-          {/* Currency picker inline expand */}
-          {showCurrencyPicker && (
-            <>
-              <View style={[styles.rowDivider, { backgroundColor: colors.cardBorder }]} />
-              <View style={styles.currencyGrid}>
-                {CURRENCY_OPTIONS.map((c) => {
-                  const active = c.code === currency;
-                  return (
-                    <Pressable
-                      key={c.code}
-                      onPress={() => handleCurrencySelect(c.code)}
-                      style={[
-                        styles.currencyChip,
-                        {
-                          backgroundColor: active ? colors.marigold : colors.background,
-                          borderColor: active ? colors.marigold : colors.cardBorder,
-                        },
-                      ]}
-                    >
-                      <Text style={[styles.currencyChipSymbol, { color: active ? '#1B2430' : colors.marigold }]}>
-                        {c.symbol}
-                      </Text>
-                      <Text style={[styles.currencyChipCode, { color: active ? '#1B2430' : colors.textPrimary }]}>
-                        {c.code}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </>
-          )}
         </View>
 
         {/* ── Notifications ── */}
@@ -292,36 +215,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
           />
         </View>
 
-        {/* ── Account ── */}
-        <SectionLabel label="ACCOUNT" colors={colors} />
-        <View style={[styles.card, { backgroundColor: colors.cardSurface, borderColor: colors.cardBorder }]}>
-          <SettingsRow
-            icon="person-outline"
-            iconColor={colors.ink}
-            iconBg={`rgba(27,58,92,0.12)`}
-            label="Name"
-            sublabel={profile?.name ?? '—'}
-            colors={colors}
-          />
-          <SettingsRow
-            icon="mail-outline"
-            iconColor={colors.ink}
-            iconBg={`rgba(27,58,92,0.12)`}
-            label="Email"
-            sublabel={user?.email ?? '—'}
-            colors={colors}
-          />
-          <SettingsRow
-            icon="shield-checkmark-outline"
-            iconColor={colors.teal}
-            iconBg={colors.glowTeal}
-            label="Auth Provider"
-            sublabel={user?.app_metadata?.provider === 'google' ? 'Google' : 'Email & Password'}
-            last
-            colors={colors}
-          />
-        </View>
-
         {/* ── About ── */}
         <SectionLabel label="ABOUT" colors={colors} />
         <View style={[styles.card, { backgroundColor: colors.cardSurface, borderColor: colors.cardBorder }]}>
@@ -344,25 +237,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
           />
         </View>
 
-        {/* ── Danger zone ── */}
-        <Pressable
-          onPress={handleSignOut}
-          style={({ pressed }) => [
-            styles.signOutBtn,
-            {
-              borderColor: 'rgba(225,87,79,0.35)',
-              backgroundColor: pressed
-                ? 'rgba(225,87,79,0.16)'
-                : 'rgba(225,87,79,0.08)',
-            },
-          ]}
-        >
-          <View style={[styles.rowIconBox, { backgroundColor: 'rgba(225,87,79,0.14)' }]}>
-            <Ionicons name="log-out-outline" size={17} color={colors.coral} />
-          </View>
-          <Text style={[styles.signOutText, { color: colors.coral }]}>Sign Out</Text>
-        </Pressable>
-
         <View style={{ height: 48 }} />
       </ScrollView>
     </View>
@@ -374,7 +248,7 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
 
   topBar: {
-    paddingTop: 52, paddingHorizontal: PAD, paddingBottom: 14,
+    paddingTop: 44, paddingHorizontal: PAD, paddingBottom: 12,
     flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1,
   },
   navBtn: { width: 34, height: 34, borderRadius: 17, justifyContent: 'center', alignItems: 'center' },

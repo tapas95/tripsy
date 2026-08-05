@@ -52,7 +52,7 @@ export const useRealtimeTrip = (tripId: string | undefined) => {
           if (payload.eventType === 'INSERT') {
             const newExpense = payload.new as any;
             sendLocalNotification(
-              'New Expense Added 💸',
+              'New Expense Added',
               `An expense of ${newExpense.amount ?? ''} was added.`
             );
           }
@@ -88,7 +88,7 @@ export const useRealtimeTrip = (tripId: string | undefined) => {
           if (payload.eventType === 'INSERT') {
             const settlement = payload.new as any;
             sendLocalNotification(
-              'Debt Settled 🤝',
+              'Debt Settled',
               `A settlement payment of ${settlement.amount ?? ''} was logged.`
             );
           }

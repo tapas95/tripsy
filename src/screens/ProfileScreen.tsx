@@ -16,14 +16,14 @@ import * as ImagePicker from 'expo-image-picker';
 import { useMutation } from '@tanstack/react-query';
 import { useTheme } from '../theme';
 import { useAuth } from '../hooks/useAuth';
-import { updateProfile } from '../api/auth';
+import { updateProfile, updateUserPassword } from '../api/auth';
 import { uploadAvatar } from '../api/storage';
 
 interface ProfileScreenProps {
   onBack: () => void;
 }
 
-const PAD = 20;
+const PAD   = 16;
 const R   = 16;
 const BW  = 1.5;
 
@@ -60,7 +60,46 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
   const [localAvatarUri, setLocalAvatarUri] = useState<string | null>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
-  // ── Name save mutation ────────────────────────────────────────────────────
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordSaved, setPasswordSaved] = useState(false);
+
+  const handleUpdatePassword = async () => {
+    if (!newPassword.trim()) {
+      Alert.alert('Error', 'Please enter a new password.');
+      return;
+    }
+    if (newPassword.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match.');
+      return;
+    }
+    setIsChangingPassword(true);
+    try {
+      await updateUserPassword(newPassword);
+      setPasswordSaved(true);
+      setNewPassword('');
+      setConfirmPassword('');
+      Alert.alert(
+        'Password Updated',
+        'Your password has been changed successfully. Please sign in again with your new password.',
+        [
+          {
+            text: 'OK',
+            onPress: () => signOut(),
+          },
+        ]
+      );
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Could not update password.');
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
   const updateMutation = useMutation({
     mutationFn: () => updateProfile(user!.id, { name }),
     onSuccess: async () => {
@@ -238,21 +277,59 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
           )}
         </Pressable>
 
-        {/* ── App Info ── */}
-        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>APP</Text>
+        {/* ── Security & Password ── */}
+        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>SECURITY & PASSWORD</Text>
         <View style={[styles.card, { backgroundColor: colors.cardSurface, borderColor: colors.cardBorder }]}>
-          <View style={styles.infoRow}>
-            <Ionicons name="information-circle-outline" size={16} color={colors.textMuted} />
-            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Version</Text>
-            <Text style={[styles.infoValue, { color: colors.textPrimary }]}>{VERSION}</Text>
+          <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>New Password</Text>
+          <View style={[styles.inputRow, { borderColor: colors.cardBorder, backgroundColor: colors.background }]}>
+            <Ionicons name="lock-closed-outline" size={16} color={colors.textMuted} />
+            <TextInput
+              style={[styles.inputText, { color: colors.textPrimary }]}
+              value={newPassword}
+              onChangeText={setNewPassword}
+              placeholder="Enter new password"
+              placeholderTextColor={colors.textMuted}
+              secureTextEntry
+            />
           </View>
+
           <View style={[styles.divider, { backgroundColor: colors.cardBorder }]} />
-          <View style={styles.infoRow}>
-            <Ionicons name="code-outline" size={16} color={colors.textMuted} />
-            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Currency</Text>
-            <Text style={[styles.infoValue, { color: colors.textPrimary }]}>INR (₹)</Text>
+
+          <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Confirm Password</Text>
+          <View style={[styles.inputRow, { borderColor: colors.cardBorder, backgroundColor: colors.background }]}>
+            <Ionicons name="checkmark-done-outline" size={16} color={colors.textMuted} />
+            <TextInput
+              style={[styles.inputText, { color: colors.textPrimary }]}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              placeholder="Confirm new password"
+              placeholderTextColor={colors.textMuted}
+              secureTextEntry
+            />
           </View>
         </View>
+
+        {/* Update Password button */}
+        <Pressable
+          onPress={handleUpdatePassword}
+          disabled={isChangingPassword || !newPassword.trim()}
+          style={({ pressed }) => [
+            styles.saveBtn,
+            { backgroundColor: passwordSaved ? colors.teal : colors.marigold, marginBottom: 24 },
+            pressed && styles.pressed,
+          ]}
+        >
+          {isChangingPassword ? (
+            <ActivityIndicator color="#1B2430" />
+          ) : (
+            <>
+              <Ionicons name={passwordSaved ? 'checkmark-circle-outline' : 'key-outline'} size={18} color="#1B2430" />
+              <Text style={styles.saveBtnText}>{passwordSaved ? 'Password Updated!' : 'Update Password'}</Text>
+            </>
+          )}
+        </Pressable>
+
+
 
         {/* ── Sign Out ── */}
         <Pressable
@@ -276,7 +353,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   topBar: {
-    paddingTop: 52, paddingHorizontal: PAD, paddingBottom: 14,
+    paddingTop: 44, paddingHorizontal: PAD, paddingBottom: 12,
     flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1,
   },
   navBtn: { width: 34, height: 34, borderRadius: 17, justifyContent: 'center', alignItems: 'center' },

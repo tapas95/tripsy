@@ -24,15 +24,7 @@ import { ReceiptPickerModal } from '../components/ReceiptPickerModal';
 import { ExpenseWithDetails } from '../api/expenses';
 import { TripWithRole } from '../api/trips';
 
-// ─── Category config (mirrors TripDetailScreen) ──────────────────────────────
-const CATEGORIES = [
-  { key: 'food',     label: 'Food',     icon: 'restaurant-outline'  as const, color: '#F2A93B', bg: 'rgba(242,169,59,0.14)'   },
-  { key: 'travel',   label: 'Travel',   icon: 'car-outline'         as const, color: '#2F9E8F', bg: 'rgba(47,158,143,0.14)'   },
-  { key: 'hotel',    label: 'Hotel',    icon: 'bed-outline'         as const, color: '#8B5CF6', bg: 'rgba(139,92,246,0.14)'   },
-  { key: 'shopping', label: 'Shopping', icon: 'bag-outline'         as const, color: '#E1574F', bg: 'rgba(225,87,79,0.14)'    },
-  { key: 'other',    label: 'Other',    icon: 'receipt-outline'     as const, color: '#6B7280', bg: 'rgba(107,114,128,0.14)'  },
-];
-const catOf = (k: string) => CATEGORIES.find((c) => c.key === k) ?? CATEGORIES[4];
+import { CATEGORIES, getCategoryConfig } from '../utils/categories';
 
 type SplitMode = 'equal' | 'custom';
 
@@ -49,9 +41,10 @@ const SplitRow: React.FC<{
   isYou: boolean;
   amount: number;
   currency: string;
+  isLast?: boolean;
   colors: ReturnType<typeof useTheme>['colors'];
-}> = ({ name, isYou, amount, currency, colors }) => (
-  <View style={[splitRowStyles.row, { borderBottomColor: colors.cardBorder }]}>
+}> = ({ name, isYou, amount, currency, isLast, colors }) => (
+  <View style={[splitRowStyles.row, !isLast && { borderBottomWidth: 1, borderBottomColor: colors.cardBorder }]}>
     <View style={[splitRowStyles.avatar, { backgroundColor: colors.glowMarigold }]}>
       <Text style={[splitRowStyles.avatarText, { color: colors.marigold }]}>
         {name.charAt(0).toUpperCase()}
@@ -65,7 +58,7 @@ const SplitRow: React.FC<{
 );
 
 const splitRowStyles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 11, borderBottomWidth: 1 },
+  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 11 },
   avatar: { width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', marginRight: 10 },
   avatarText: { fontSize: 13, fontWeight: '800' },
   name: { flex: 1, fontSize: 14, fontWeight: '600' },
@@ -122,9 +115,9 @@ export const ExpenseDetailScreen: React.FC<Props> = ({ expense, trip, onBack, on
   const fmtDate = (d: string) =>
     new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
 
-  const currencySymbol = trip.currency === 'INR' ? '₹' : trip.currency;
+  const currencySymbol = '₹';
 
-  const cat = catOf(category);
+  const cat = getCategoryConfig(category);
 
   // ── Cancel edit ──────────────────────────────────────────────────────────
   const cancelEdit = useCallback(() => {
@@ -443,9 +436,16 @@ export const ExpenseDetailScreen: React.FC<Props> = ({ expense, trip, onBack, on
                   onPress={() => setSplitMode(mode)}
                   style={[styles.splitOption, splitMode === mode && { backgroundColor: colors.marigold }]}
                 >
-                  <Text style={[styles.splitOptionText, { color: splitMode === mode ? '#1B2430' : colors.textSecondary }]}>
-                    {mode === 'equal' ? '⚖️ Equal' : '✏️ Custom'}
-                  </Text>
+                  <View style={styles.splitOptionInner}>
+                    <Ionicons
+                      name={mode === 'equal' ? 'scale-outline' : 'create-outline'}
+                      size={14}
+                      color={splitMode === mode ? '#1B2430' : colors.textSecondary}
+                    />
+                    <Text style={[styles.splitOptionText, { color: splitMode === mode ? '#1B2430' : colors.textSecondary }]}>
+                      {mode === 'equal' ? 'Equal' : 'Custom'}
+                    </Text>
+                  </View>
                 </Pressable>
               ))}
             </View>
@@ -543,6 +543,7 @@ export const ExpenseDetailScreen: React.FC<Props> = ({ expense, trip, onBack, on
                 isYou={s.userId === user?.id}
                 amount={s.amount}
                 currency={currencySymbol}
+                isLast={i === splitRows.length - 1}
                 colors={colors}
               />
             ))}
@@ -598,8 +599,8 @@ const metaStyles = StyleSheet.create({
 });
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
-const PAD_H   = 20;
-const PAD_TOP = 52;
+const PAD_H   = 16;
+const PAD_TOP = 44;
 const R       = 16;
 const BW      = 1.5;
 
@@ -610,7 +611,7 @@ const styles = StyleSheet.create({
   topBar: {
     paddingTop: PAD_TOP,
     paddingHorizontal: PAD_H,
-    paddingBottom: 14,
+    paddingBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: 1,
@@ -647,8 +648,8 @@ const styles = StyleSheet.create({
   editCardTitle: { fontSize: 18, fontWeight: '800', marginBottom: 8 },
 
   // Section card
-  section: { borderRadius: R, borderWidth: BW, padding: 16 },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
+  section: { borderRadius: R, borderWidth: BW, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 6 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
   sectionTitle: { flex: 1, fontSize: 15, fontWeight: '800' },
   sectionCount: { fontSize: 12, fontWeight: '600' },
 
@@ -685,7 +686,8 @@ const styles = StyleSheet.create({
 
   // Split toggle
   splitToggle: { flexDirection: 'row', borderWidth: BW, borderRadius: 13, overflow: 'hidden', marginBottom: 8 },
-  splitOption: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 11 },
+  splitOption: { flex: 1, paddingVertical: 10, alignItems: 'center', justifyContent: 'center', borderRadius: 11 },
+  splitOptionInner: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   splitOptionText: { fontSize: 14, fontWeight: '700' },
   splitPreview: {
     flexDirection: 'row', alignItems: 'center', gap: 6,

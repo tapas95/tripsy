@@ -21,13 +21,7 @@ import { TripMemberProfile } from '../api/members';
 // ─── Types ──────────────────────────────────────────────────────────────────
 type SplitMode = 'equal' | 'custom';
 
-const CATEGORIES = [
-  { key: 'food',     label: 'Food',     icon: 'restaurant-outline'  as const, color: '#F2A93B' },
-  { key: 'travel',   label: 'Travel',   icon: 'car-outline'         as const, color: '#2F9E8F' },
-  { key: 'hotel',    label: 'Hotel',    icon: 'bed-outline'         as const, color: '#8B5CF6' },
-  { key: 'shopping', label: 'Shopping', icon: 'bag-outline'         as const, color: '#E1574F' },
-  { key: 'other',    label: 'Other',    icon: 'receipt-outline'     as const, color: '#6B7280' },
-];
+import { CATEGORIES } from '../utils/categories';
 
 interface AddExpenseModalProps {
   visible: boolean;
@@ -117,7 +111,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose} statusBarTranslucent>
+    <Modal visible={visible} animationType="fade" transparent onRequestClose={handleClose} statusBarTranslucent>
       <Pressable style={styles.overlay} onPress={handleClose} />
       <KeyboardAvoidingView
         style={styles.kav}
@@ -193,10 +187,12 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
 
             {/* Date */}
             <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>DATE</Text>
-            <DatePickerInput
-              value={expenseDate}
-              onChange={setExpenseDate}
-            />
+            <View style={styles.datePickerBox}>
+              <DatePickerInput
+                value={expenseDate}
+                onChange={setExpenseDate}
+              />
+            </View>
 
             {/* Paid By */}
             <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>PAID BY</Text>
@@ -240,12 +236,19 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                     splitMode === mode && { backgroundColor: colors.marigold },
                   ]}
                 >
-                  <Text style={[
-                    styles.splitOptionText,
-                    { color: splitMode === mode ? '#1B2430' : colors.textSecondary },
-                  ]}>
-                    {mode === 'equal' ? '⚖️ Equal' : '✏️ Custom'}
-                  </Text>
+                  <View style={styles.splitOptionInner}>
+                    <Ionicons
+                      name={mode === 'equal' ? 'scale-outline' : 'create-outline'}
+                      size={15}
+                      color={splitMode === mode ? '#1B2430' : colors.textSecondary}
+                    />
+                    <Text style={[
+                      styles.splitOptionText,
+                      { color: splitMode === mode ? '#1B2430' : colors.textSecondary },
+                    ]}>
+                      {mode === 'equal' ? 'Equal' : 'Custom'}
+                    </Text>
+                  </View>
                 </Pressable>
               ))}
             </View>
@@ -363,6 +366,7 @@ const styles = StyleSheet.create({
 
   // Category
   catRow: { marginBottom: 16 },
+  datePickerBox: { marginBottom: 16 },
   catChip: {
     flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 8,
     borderRadius: 20, borderWidth: 1.5, marginRight: 8, gap: 6,
@@ -389,7 +393,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row', borderWidth: 1.5, borderRadius: 14,
     overflow: 'hidden', marginBottom: 12,
   },
-  splitOption: { flex: 1, paddingVertical: 11, alignItems: 'center', borderRadius: 12 },
+  splitOption: { flex: 1, paddingVertical: 11, alignItems: 'center', justifyContent: 'center', borderRadius: 12 },
+  splitOptionInner: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   splitOptionText: { fontSize: 14, fontWeight: '700' },
 
   // Split preview

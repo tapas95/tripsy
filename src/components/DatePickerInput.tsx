@@ -71,7 +71,6 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
     width: '100%',
   },
   label: {

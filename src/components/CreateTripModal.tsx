@@ -53,7 +53,7 @@ export const CreateTripModal: React.FC<CreateTripModalProps> = ({ visible, onClo
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose} statusBarTranslucent>
+    <Modal visible={visible} animationType="fade" transparent onRequestClose={onClose} statusBarTranslucent>
       <Pressable style={styles.scrim} onPress={onClose} />
       <KeyboardAvoidingView
         style={styles.kav}
@@ -76,17 +76,9 @@ export const CreateTripModal: React.FC<CreateTripModalProps> = ({ visible, onClo
 
           <Input
             label="Trip Name"
-            placeholder="e.g. Summer in Goa 🌴"
+            placeholder="e.g. Summer in Goa"
             value={name}
             onChangeText={setName}
-          />
-
-          <Input
-            label="Currency"
-            placeholder="INR, USD, EUR..."
-            value={currency}
-            onChangeText={(val) => setCurrency(val.toUpperCase())}
-            autoCapitalize="characters"
           />
 
           <View style={styles.dateRow}>

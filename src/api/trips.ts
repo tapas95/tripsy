@@ -76,6 +76,19 @@ export const createTrip = async (tripData: {
 
 export const joinTripByCode = async (inviteCode: string, userId: string): Promise<Trip> => {
   const cleanCode = inviteCode.trim();
+
+  // Try RPC first (security definer bypasses SELECT policy for non-members)
+  const { data: rpcTrip, error: rpcError } = await (supabase as any).rpc('join_trip_by_code', {
+    p_invite_code: cleanCode,
+  });
+
+  if (!rpcError && rpcTrip) {
+    // RPC returns trip object or array
+    const trip = Array.isArray(rpcTrip) ? rpcTrip[0] : rpcTrip;
+    return trip as Trip;
+  }
+
+  // Fallback if RPC function is not created in DB yet
   const { data: trip, error: tripError } = await (supabase.from('trips') as any)
     .select('*')
     .eq('invite_code', cleanCode)
