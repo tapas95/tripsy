@@ -89,7 +89,7 @@ export const TripCard: React.FC<TripCardProps> = ({ trip, onPress }) => {
         </View>
 
         <View style={[styles.currencyBadge, { backgroundColor: colors.glowMarigold }]}>
-          <Text style={[styles.currencyText, { color: colors.marigold }]}>₹ {trip.currency || 'INR'}</Text>
+          <Text style={[styles.currencyText, { color: colors.marigold }]}>{trip.currency || 'INR'}</Text>
         </View>
       </View>
     </Pressable>

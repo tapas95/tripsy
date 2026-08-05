@@ -157,7 +157,7 @@ export const ExpenseDetailScreen: React.FC<Props> = ({ expense, trip, onBack, on
         .filter((s) => s.shareAmount > 0);
       const diff = Math.abs(customTotal - amount);
       if (diff > 0.5)
-        return setError(`Custom amounts total ₹${customTotal.toFixed(2)}, expected ₹${amount.toFixed(2)}.`);
+        return setError(`Custom amounts total ${currencySymbol}${customTotal.toFixed(2)}, expected ${currencySymbol}${amount.toFixed(2)}.`);
     }
 
     try {

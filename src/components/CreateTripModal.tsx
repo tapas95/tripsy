@@ -53,10 +53,12 @@ export const CreateTripModal: React.FC<CreateTripModalProps> = ({ visible, onClo
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose} statusBarTranslucent>
+      <Pressable style={styles.scrim} onPress={onClose} />
       <KeyboardAvoidingView
-        style={styles.overlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.kav}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        pointerEvents="box-none"
       >
         <View style={[styles.modalCard, { backgroundColor: colors.cardSurface }]}>
           <View style={styles.header}>
@@ -120,9 +122,16 @@ export const CreateTripModal: React.FC<CreateTripModalProps> = ({ visible, onClo
 };
 
 const styles = StyleSheet.create({
-  overlay: {
+  scrim: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+  },
+  kav: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'flex-end',
   },
   modalCard: {

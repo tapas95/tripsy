@@ -148,10 +148,10 @@ export const TripDetailScreen: React.FC<TripDetailScreenProps> = ({
           {/* Total Spent */}
           <View style={styles.statItem}>
             <View style={styles.statIconRow}>
-              <Ionicons name="wallet-outline" size={14} color={colors.marigold} />
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Total Spent</Text>
+              <Ionicons name="wallet-outline" size={12} color={colors.marigold} />
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]} numberOfLines={1}>Total Spent</Text>
             </View>
-            <CurrencyText amount={totalSpent} symbol="₹" size={20} color={colors.textPrimary} />
+            <CurrencyText amount={totalSpent} symbol="₹" size={15} color={colors.textPrimary} />
           </View>
 
           <View style={[styles.statDivider, { backgroundColor: colors.cardBorder }]} />
@@ -159,10 +159,10 @@ export const TripDetailScreen: React.FC<TripDetailScreenProps> = ({
           {/* Expenses count */}
           <View style={styles.statItem}>
             <View style={styles.statIconRow}>
-              <Ionicons name="receipt-outline" size={14} color={colors.teal} />
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Expenses</Text>
+              <Ionicons name="receipt-outline" size={12} color={colors.teal} />
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]} numberOfLines={1}>Expenses</Text>
             </View>
-            <Text style={[styles.statValue, { color: colors.textPrimary }]}>{expenses.length}</Text>
+            <Text style={[styles.statValue, { color: colors.textPrimary }]} numberOfLines={1}>{expenses.length}</Text>
           </View>
 
           <View style={[styles.statDivider, { backgroundColor: colors.cardBorder }]} />
@@ -170,8 +170,8 @@ export const TripDetailScreen: React.FC<TripDetailScreenProps> = ({
           {/* Dates */}
           <View style={styles.statItem}>
             <View style={styles.statIconRow}>
-              <Ionicons name="calendar-outline" size={14} color={colors.coral} />
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Dates</Text>
+              <Ionicons name="calendar-outline" size={12} color={colors.coral} />
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]} numberOfLines={1}>Dates</Text>
             </View>
             <Text style={[styles.statValue, { color: colors.textPrimary }]} numberOfLines={1}>
               {trip.start_date ? fmtDate(trip.start_date) : 'Flexible'}
@@ -423,9 +423,9 @@ const styles = StyleSheet.create({
     gap: 4,
     marginBottom: 4,
   },
-  statLabel: { fontSize: 11, fontWeight: '600' },
-  statValue: { fontSize: 16, fontWeight: '800', letterSpacing: -0.3 },
-  statDivider: { width: 1, marginHorizontal: 8, alignSelf: 'stretch' },
+  statLabel: { fontSize: 10, fontWeight: '600' },
+  statValue: { fontSize: 14, fontWeight: '800', letterSpacing: -0.3 },
+  statDivider: { width: 1, marginHorizontal: 4, alignSelf: 'stretch' },
 
   // Tabs
   tabBar: {

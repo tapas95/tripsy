@@ -146,18 +146,18 @@ export const BalancesScreen: React.FC<BalancesScreenProps> = ({ trip, onBack }) 
         <View style={[styles.summaryCard, { backgroundColor: colors.ink }]}>
           <View style={styles.summaryRow}>
             <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Total Spent</Text>
-              <CurrencyText amount={totalSpent} symbol="₹" size={22} color="#F7F6F3" />
+              <Text style={styles.summaryLabel} numberOfLines={1}>Total Spent</Text>
+              <CurrencyText amount={totalSpent} symbol="₹" size={15} color="#F7F6F3" />
             </View>
             <View style={[styles.summaryDivider, { backgroundColor: 'rgba(255,255,255,0.15)' }]} />
             <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Expenses</Text>
-              <Text style={styles.summaryValue}>{expenses.length}</Text>
+              <Text style={styles.summaryLabel} numberOfLines={1}>Expenses</Text>
+              <Text style={styles.summaryValue} numberOfLines={1}>{expenses.length}</Text>
             </View>
             <View style={[styles.summaryDivider, { backgroundColor: 'rgba(255,255,255,0.15)' }]} />
             <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Members</Text>
-              <Text style={styles.summaryValue}>{members.length}</Text>
+              <Text style={styles.summaryLabel} numberOfLines={1}>Members</Text>
+              <Text style={styles.summaryValue} numberOfLines={1}>{members.length}</Text>
             </View>
           </View>
         </View>
@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 4,
   },
   summaryValue: {
-    fontSize: 22, fontWeight: '800', color: '#F7F6F3', letterSpacing: -0.5,
+    fontSize: 14, fontWeight: '800', color: '#F7F6F3', letterSpacing: -0.3,
   },
   summaryDivider: { width: 1, height: 36, marginHorizontal: 4 },
 

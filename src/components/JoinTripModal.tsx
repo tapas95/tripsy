@@ -64,10 +64,12 @@ export const JoinTripModal: React.FC<JoinTripModalProps> = ({ visible, onClose, 
   const codeChars = code.split('');
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose} statusBarTranslucent>
+      <Pressable style={styles.scrim} onPress={handleClose} />
       <KeyboardAvoidingView
-        style={styles.overlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.kav}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        pointerEvents="box-none"
       >
         <View style={[styles.sheet, { backgroundColor: colors.cardSurface }]}>
 
@@ -182,9 +184,16 @@ export const JoinTripModal: React.FC<JoinTripModalProps> = ({ visible, onClose, 
 };
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
+  scrim: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
     backgroundColor: 'rgba(0,0,0,0.55)',
+  },
+  kav: {
+    flex: 1,
     justifyContent: 'flex-end',
   },
   sheet: {
