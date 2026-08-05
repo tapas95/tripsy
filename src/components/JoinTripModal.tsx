@@ -17,15 +17,22 @@ import { useTrips } from '../hooks/useTrips';
 interface JoinTripModalProps {
   visible: boolean;
   onClose: () => void;
+  initialCode?: string;
 }
 
 // Segmented code input — 8 boxes for the invite code
 const CODE_LENGTH = 8;
 
-export const JoinTripModal: React.FC<JoinTripModalProps> = ({ visible, onClose }) => {
+export const JoinTripModal: React.FC<JoinTripModalProps> = ({ visible, onClose, initialCode }) => {
   const { colors } = useTheme();
   const { joinTrip, isJoining } = useTrips();
-  const [code, setCode] = useState('');
+  const [code, setCode] = useState(initialCode || '');
+
+  React.useEffect(() => {
+    if (initialCode) {
+      setCode(initialCode);
+    }
+  }, [initialCode]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const inputRef = useRef<TextInput>(null);

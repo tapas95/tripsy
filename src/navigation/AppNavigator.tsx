@@ -65,13 +65,26 @@ const AuthStack: React.FC<{ onPasswordRecovery?: () => void }> = () => {
   );
 };
 
+import { Linking } from 'react-native';
+
 // ─── Authenticated stack ──────────────────────────────────────────────────────
-const AppStack: React.FC = () => {
+const AppStack: React.FC<{ pendingInviteCode?: string; onClearInviteCode?: () => void }> = ({
+  pendingInviteCode,
+  onClearInviteCode,
+}) => {
   const { colors } = useTheme();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showJoinModal, setShowJoinModal]     = useState(false);
   const [showAddExpense, setShowAddExpense]   = useState(false);
   const [activeTripId, setActiveTripId]       = useState<string>('');
+  const [inviteCode, setInviteCode]           = useState<string>('');
+
+  React.useEffect(() => {
+    if (pendingInviteCode) {
+      setInviteCode(pendingInviteCode);
+      setShowJoinModal(true);
+    }
+  }, [pendingInviteCode]);
 
   return (
     <>
@@ -161,7 +174,12 @@ const AppStack: React.FC = () => {
       />
       <JoinTripModal
         visible={showJoinModal}
-        onClose={() => setShowJoinModal(false)}
+        initialCode={inviteCode}
+        onClose={() => {
+          setShowJoinModal(false);
+          setInviteCode('');
+          if (onClearInviteCode) onClearInviteCode();
+        }}
       />
       <AddExpenseModal
         visible={showAddExpense}
@@ -182,6 +200,30 @@ export const AppNavigator: React.FC = () => {
   } = useAuth();
   const { colors } = useTheme();
   const [splashFinished, setSplashFinished] = useState(false);
+  const [pendingInviteCode, setPendingInviteCode] = useState<string>('');
+
+  React.useEffect(() => {
+    // Process incoming deep links (tripsy://join?code=XYZ or tripsy://invite/XYZ)
+    const handleUrl = (event: { url: string }) => {
+      if (!event.url) return;
+      try {
+        const parsed = new URL(event.url.replace('#', '?'));
+        const code = parsed.searchParams.get('code') || parsed.pathname.split('/').pop();
+        if (code && code.length >= 4) {
+          setPendingInviteCode(code);
+        }
+      } catch (err) {
+        console.warn('Failed to parse deep link URL:', err);
+      }
+    };
+
+    Linking.getInitialURL().then((url) => {
+      if (url) handleUrl({ url });
+    });
+
+    const subscription = Linking.addEventListener('url', handleUrl);
+    return () => subscription.remove();
+  }, []);
 
   if (!splashFinished || isAuthLoading) {
     return <SplashScreen onFinish={() => setSplashFinished(true)} />;
@@ -193,7 +235,11 @@ export const AppNavigator: React.FC = () => {
 
   return (
     <NavigationContainer>
-      {user ? <AppStack /> : <AuthStack />}
+      {user ? (
+        <AppStack pendingInviteCode={pendingInviteCode} onClearInviteCode={() => setPendingInviteCode('')} />
+      ) : (
+        <AuthStack />
+      )}
     </NavigationContainer>
   );
 };

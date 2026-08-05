@@ -15,6 +15,7 @@ import { useTheme } from '../theme';
 import { ThemeMode } from '../theme/ThemeContext';
 import { useAuth } from '../hooks/useAuth';
 import { updateProfile } from '../api/auth';
+import { registerForPushNotificationsAsync } from '../utils/notifications';
 
 interface SettingsScreenProps {
   onBack: () => void;
@@ -255,7 +256,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
             right={
               <Switch
                 value={expenseAlerts}
-                onValueChange={setExpenseAlerts}
+                onValueChange={async (val) => {
+                  setExpenseAlerts(val);
+                  if (val) {
+                    await registerForPushNotificationsAsync();
+                  }
+                }}
                 trackColor={{ false: colors.cardBorder, true: colors.marigold }}
                 thumbColor={expenseAlerts ? '#1B2430' : colors.textMuted}
               />
@@ -272,7 +278,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
             right={
               <Switch
                 value={settlementAlerts}
-                onValueChange={setSettlementAlerts}
+                onValueChange={async (val) => {
+                  setSettlementAlerts(val);
+                  if (val) {
+                    await registerForPushNotificationsAsync();
+                  }
+                }}
                 trackColor={{ false: colors.cardBorder, true: colors.marigold }}
                 thumbColor={settlementAlerts ? '#1B2430' : colors.textMuted}
               />

@@ -18,6 +18,7 @@
 import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
+import { sendLocalNotification } from '../utils/notifications';
 
 export const useRealtimeTrip = (tripId: string | undefined) => {
   const queryClient = useQueryClient();
@@ -44,9 +45,17 @@ export const useRealtimeTrip = (tripId: string | undefined) => {
           table: 'expenses',
           filter: `trip_id=eq.${tripId}`,
         },
-        () => {
+        (payload) => {
           queryClient.invalidateQueries({ queryKey: ['expenses', tripId] });
           queryClient.invalidateQueries({ queryKey: ['settlements', tripId] });
+
+          if (payload.eventType === 'INSERT') {
+            const newExpense = payload.new as any;
+            sendLocalNotification(
+              'New Expense Added 💸',
+              `An expense of ${newExpense.amount ?? ''} was added.`
+            );
+          }
         }
       )
       // ── expense_splits ────────────────────────────────────────────────────
@@ -72,9 +81,17 @@ export const useRealtimeTrip = (tripId: string | undefined) => {
           table: 'settlements',
           filter: `trip_id=eq.${tripId}`,
         },
-        () => {
+        (payload) => {
           queryClient.invalidateQueries({ queryKey: ['settlements', tripId] });
           queryClient.invalidateQueries({ queryKey: ['expenses', tripId] });
+
+          if (payload.eventType === 'INSERT') {
+            const settlement = payload.new as any;
+            sendLocalNotification(
+              'Debt Settled 🤝',
+              `A settlement payment of ${settlement.amount ?? ''} was logged.`
+            );
+          }
         }
       )
       .subscribe();
