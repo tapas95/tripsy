@@ -6,6 +6,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,9 +18,10 @@ import { updateUserPassword } from '../api/auth';
 
 interface ResetPasswordScreenProps {
   onSuccess: () => void;
+  onCancel?: () => void;
 }
 
-export const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({ onSuccess }) => {
+export const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({ onSuccess, onCancel }) => {
   const { colors } = useTheme();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -60,6 +62,13 @@ export const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({ onSucc
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        {onCancel ? (
+          <Pressable onPress={onCancel} style={styles.backBtn} hitSlop={10}>
+            <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
+            <Text style={[styles.backText, { color: colors.textPrimary }]}>Back</Text>
+          </Pressable>
+        ) : null}
+
         <View style={styles.header}>
           <BrandLogo size={60} />
           <Text style={[styles.title, { color: colors.textPrimary }]}>Set New Password</Text>
@@ -124,8 +133,19 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 24,
-    paddingTop: 60,
+    paddingTop: 54,
     paddingBottom: 40,
+  },
+  backBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    alignSelf: 'flex-start',
+  },
+  backText: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginLeft: 6,
   },
   header: {
     alignItems: 'center',

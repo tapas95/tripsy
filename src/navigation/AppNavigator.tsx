@@ -73,7 +73,13 @@ const AuthStack: React.FC<{ onPasswordRecovery?: () => void }> = () => {
           />
         )}
       </AuthNav.Screen>
-      <AuthNav.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+      <AuthNav.Screen name="ForgotPassword">
+        {({ navigation }) => (
+          <ForgotPasswordScreen
+            onNavigateToLogin={() => navigation.navigate('Login')}
+          />
+        )}
+      </AuthNav.Screen>
     </AuthNav.Navigator>
   );
 };
@@ -243,7 +249,12 @@ export const AppNavigator: React.FC = () => {
   }
 
   if (isPasswordRecovery) {
-    return <ResetPasswordScreen onSuccess={() => clearPasswordRecovery()} />;
+    return (
+      <ResetPasswordScreen
+        onSuccess={() => clearPasswordRecovery()}
+        onCancel={() => clearPasswordRecovery()}
+      />
+    );
   }
 
   return (
