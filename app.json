@@ -3,6 +3,7 @@
     "name": "tripsy",
     "slug": "tripsy",
     "version": "1.0.0",
+    "scheme": "tripsy",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",

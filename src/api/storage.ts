@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 // Supabase Storage bucket name (create this in your Supabase dashboard:
 //   Storage → New bucket → name: "receipts" → Public: false)

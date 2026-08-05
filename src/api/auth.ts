@@ -1,4 +1,5 @@
 import * as WebBrowser from 'expo-web-browser';
+import * as AuthSession from 'expo-auth-session';
 import { supabase } from '../lib/supabase';
 import { Profile } from '../types/database';
 
@@ -42,9 +43,15 @@ export const signUpWithEmail = async (email: string, password: string, name: str
 };
 
 export const signInWithGoogle = async () => {
+  const redirectUrl = AuthSession.makeRedirectUri({
+    scheme: 'tripsy',
+    path: 'auth/callback',
+  });
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
+      redirectTo: redirectUrl,
       skipBrowserRedirect: true,
     },
   });
@@ -54,17 +61,23 @@ export const signInWithGoogle = async () => {
   }
 
   if (data?.url) {
-    const res = await WebBrowser.openAuthSessionAsync(data.url);
+    const res = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
+
     if (res.type === 'success' && res.url) {
-      const urlParams = new URL(res.url);
-      const accessToken = urlParams.searchParams.get('access_token');
-      const refreshToken = urlParams.searchParams.get('refresh_token');
+      // Extract tokens from URL hash (#access_token=...&refresh_token=...) or query params
+      const parsedUrl = new URL(res.url.replace('#', '?'));
+      const accessToken = parsedUrl.searchParams.get('access_token');
+      const refreshToken = parsedUrl.searchParams.get('refresh_token');
 
       if (accessToken && refreshToken) {
-        await supabase.auth.setSession({
+        const { error: sessionError } = await supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken,
         });
+
+        if (sessionError) {
+          throw new Error(sessionError.message);
+        }
       }
     }
   }
