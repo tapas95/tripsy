@@ -17,7 +17,8 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.tap1995.tripsy"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -26,6 +27,11 @@
       "expo-web-browser",
       "@react-native-community/datetimepicker",
       "expo-notifications"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "1c0e925c-116d-4575-9148-eb5a4809f2dc"
+      }
+    }
   }
 }
