@@ -101,6 +101,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(data.session);
       setUser(data.session.user);
       await fetchProfile(data.session.user.id);
+      // Auto-claim pending trip invitations sent to user's email/phone
+      const { claimPendingInvitations } = await import('../api/trips');
+      await claimPendingInvitations();
     }
   };
 
@@ -110,6 +113,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(data.session);
       setUser(data.session.user);
       await fetchProfile(data.session.user.id);
+      // Auto-claim pending trip invitations sent to user's email/phone
+      const { claimPendingInvitations } = await import('../api/trips');
+      await claimPendingInvitations();
     }
   };
 

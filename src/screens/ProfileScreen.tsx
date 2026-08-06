@@ -106,6 +106,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
     mutationFn: () => updateProfile(user!.id, { name, phone: phone.trim() || null }),
     onSuccess: async () => {
       await refreshProfile();
+      const { claimPendingInvitations } = await import('../api/trips');
+      await claimPendingInvitations();
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     },

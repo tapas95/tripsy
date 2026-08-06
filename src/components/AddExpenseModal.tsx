@@ -21,7 +21,7 @@ import { useTripMembers } from '../hooks/useTripMembers';
 import { TripMemberProfile } from '../api/members';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
-type SplitMode = 'equal' | 'custom';
+type SplitMode = 'equal' | 'exact' | 'percentage' | 'shares';
 
 import { CATEGORIES } from '../utils/categories';
 
@@ -48,12 +48,27 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   const [expenseDate, setExpenseDate] = useState<Date>(new Date());
   const [paidById, setPaidById]     = useState<string>(user?.id ?? '');
   const [splitMode, setSplitMode]   = useState<SplitMode>('equal');
-  // custom split amounts keyed by userId
+
+  // Split mode state
+  const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(new Set());
   const [customAmounts, setCustomAmounts] = useState<Record<string, string>>({});
+  const [percentages, setPercentages]     = useState<Record<string, string>>({});
+  const [shares, setShares]               = useState<Record<string, number>>({});
+
   const [receiptUri, setReceiptUri]       = useState<string | null>(null);
   const [error, setError]                 = useState<string | null>(null);
 
   const amount = parseFloat(amountStr) || 0;
+
+  // Initialize member defaults when members list loads
+  React.useEffect(() => {
+    if (members.length) {
+      setSelectedMemberIds(new Set(members.map((m) => m.id)));
+      const initShares: Record<string, number> = {};
+      members.forEach((m) => { initShares[m.id] = 1; });
+      setShares(initShares);
+    }
+  }, [members]);
 
   const handlePickReceipt = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -70,15 +85,57 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
     }
   };
 
-  // Equal split per member
-  const equalShare = useMemo(() => {
-    if (!members.length || amount <= 0) return 0;
-    return Math.round((amount / members.length) * 100) / 100;
-  }, [amount, members.length]);
+  // ── Computations for split modes ─────────────────────────────────────────
 
-  const customTotal = useMemo(() =>
-    Object.values(customAmounts).reduce((s, v) => s + (parseFloat(v) || 0), 0),
-    [customAmounts]);
+  // 1. Equal Split (with member toggles)
+  const activeEqualMembers = useMemo(
+    () => members.filter((m) => selectedMemberIds.has(m.id)),
+    [members, selectedMemberIds]
+  );
+  const equalShare = useMemo(() => {
+    if (!activeEqualMembers.length || amount <= 0) return 0;
+    return Math.round((amount / activeEqualMembers.length) * 100) / 100;
+  }, [amount, activeEqualMembers.length]);
+
+  // 2. Exact Amounts
+  const exactTotal = useMemo(
+    () => Object.values(customAmounts).reduce((s, v) => s + (parseFloat(v) || 0), 0),
+    [customAmounts]
+  );
+
+  // 3. Percentages
+  const percentageTotal = useMemo(
+    () => Object.values(percentages).reduce((s, v) => s + (parseFloat(v) || 0), 0),
+    [percentages]
+  );
+
+  // 4. Shares / Ratios
+  const totalShares = useMemo(
+    () => Object.values(shares).reduce((s, v) => s + (v || 0), 0),
+    [shares]
+  );
+
+  // Toggle member participation for Equal mode
+  const toggleMemberSelection = (userId: string) => {
+    setSelectedMemberIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(userId)) {
+        if (next.size > 1) next.delete(userId);
+      } else {
+        next.add(userId);
+      }
+      return next;
+    });
+  };
+
+  // Change shares stepper
+  const updateShareCount = (userId: string, delta: number) => {
+    setShares((prev) => {
+      const current = prev[userId] ?? 1;
+      const nextVal = Math.max(0, current + delta);
+      return { ...prev, [userId]: nextVal };
+    });
+  };
 
   // ── Reset ────────────────────────────────────────────────────────────────
   const reset = () => {
@@ -88,7 +145,12 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
     setExpenseDate(new Date());
     setPaidById(user?.id ?? '');
     setSplitMode('equal');
+    setSelectedMemberIds(new Set(members.map((m) => m.id)));
     setCustomAmounts({});
+    setPercentages({});
+    const initShares: Record<string, number> = {};
+    members.forEach((m) => { initShares[m.id] = 1; });
+    setShares(initShares);
     setReceiptUri(null);
     setError(null);
   };
@@ -104,13 +166,32 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
     let splits: { userId: string; shareAmount: number }[];
 
     if (splitMode === 'equal') {
-      splits = members.map((m) => ({ userId: m.id, shareAmount: equalShare }));
-    } else {
+      if (!activeEqualMembers.length) return setError('Select at least 1 member for equal split.');
+      splits = activeEqualMembers.map((m) => ({ userId: m.id, shareAmount: equalShare }));
+    } else if (splitMode === 'exact') {
       splits = members
         .map((m) => ({ userId: m.id, shareAmount: parseFloat(customAmounts[m.id] ?? '0') || 0 }))
         .filter((s) => s.shareAmount > 0);
-      const diff = Math.abs(customTotal - amount);
-      if (diff > 0.5) return setError(`Custom amounts total ₹${customTotal.toFixed(2)}, expected ₹${amount.toFixed(2)}.`);
+      const diff = Math.abs(exactTotal - amount);
+      if (diff > 0.5) return setError(`Exact amounts total ₹${exactTotal.toFixed(2)}, expected ₹${amount.toFixed(2)}.`);
+    } else if (splitMode === 'percentage') {
+      if (Math.abs(percentageTotal - 100) > 0.5) {
+        return setError(`Percentages total ${percentageTotal.toFixed(1)}%, must equal 100%.`);
+      }
+      splits = members
+        .map((m) => {
+          const pct = parseFloat(percentages[m.id] ?? '0') || 0;
+          return { userId: m.id, shareAmount: Math.round(((pct / 100) * amount) * 100) / 100 };
+        })
+        .filter((s) => s.shareAmount > 0);
+    } else { // shares
+      if (totalShares <= 0) return setError('At least one member must have > 0 shares.');
+      splits = members
+        .map((m) => {
+          const count = shares[m.id] ?? 0;
+          return { userId: m.id, shareAmount: Math.round(((count / totalShares) * amount) * 100) / 100 };
+        })
+        .filter((s) => s.shareAmount > 0);
     }
 
     try {
@@ -271,81 +352,220 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
               </Pressable>
             )}
 
-            {/* Split Mode */}
-            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>SPLIT</Text>
+            {/* Split Mode Selector (4 Modes) */}
+            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>SPLIT METHOD</Text>
             <View style={[styles.splitToggle, { backgroundColor: colors.background, borderColor: colors.cardBorder }]}>
-              {(['equal', 'custom'] as const).map((mode) => (
+              {([
+                { key: 'equal', label: 'Equal', icon: 'scale-outline' },
+                { key: 'exact', label: 'Exact', icon: 'cash-outline' },
+                { key: 'percentage', label: '%', icon: 'pie-chart-outline' },
+                { key: 'shares', label: 'Shares', icon: 'people-outline' },
+              ] as const).map((mode) => (
                 <Pressable
-                  key={mode}
-                  onPress={() => setSplitMode(mode)}
+                  key={mode.key}
+                  onPress={() => setSplitMode(mode.key)}
                   style={[
                     styles.splitOption,
-                    splitMode === mode && { backgroundColor: colors.marigold },
+                    splitMode === mode.key && { backgroundColor: colors.marigold },
                   ]}
                 >
                   <View style={styles.splitOptionInner}>
                     <Ionicons
-                      name={mode === 'equal' ? 'scale-outline' : 'create-outline'}
-                      size={15}
-                      color={splitMode === mode ? '#1B2430' : colors.textSecondary}
+                      name={mode.icon}
+                      size={14}
+                      color={splitMode === mode.key ? '#1B2430' : colors.textSecondary}
                     />
                     <Text style={[
                       styles.splitOptionText,
-                      { color: splitMode === mode ? '#1B2430' : colors.textSecondary },
+                      { color: splitMode === mode.key ? '#1B2430' : colors.textSecondary },
                     ]}>
-                      {mode === 'equal' ? 'Equal' : 'Custom'}
+                      {mode.label}
                     </Text>
                   </View>
                 </Pressable>
               ))}
             </View>
 
-            {/* Equal preview */}
-            {splitMode === 'equal' && amount > 0 && (
-              <View style={[styles.splitPreview, { backgroundColor: colors.glowMarigold }]}>
-                <Ionicons name="people-outline" size={14} color={colors.marigold} />
-                <Text style={[styles.splitPreviewText, { color: colors.marigold }]}>
-                  ₹ {equalShare.toFixed(2)} per person ({members.length} members)
+            {/* MODE 1: EQUAL SPLIT WITH MEMBER TOGGLES */}
+            {splitMode === 'equal' && (
+              <View style={{ marginBottom: 12 }}>
+                <Text style={[styles.subLabelText, { color: colors.textSecondary }]}>
+                  Select members involved in this split:
                 </Text>
+                {members.map((m) => {
+                  const isChecked = selectedMemberIds.has(m.id);
+                  return (
+                    <Pressable
+                      key={m.id}
+                      onPress={() => toggleMemberSelection(m.id)}
+                      style={[
+                        styles.toggleRow,
+                        { backgroundColor: colors.background, borderColor: isChecked ? colors.marigold : colors.cardBorder }
+                      ]}
+                    >
+                      <View style={[styles.checkbox, { borderColor: isChecked ? colors.marigold : colors.cardBorder, backgroundColor: isChecked ? colors.marigold : 'transparent' }]}>
+                        {isChecked && <Ionicons name="checkmark" size={14} color="#1B2430" />}
+                      </View>
+                      <Text style={[styles.customName, { color: colors.textPrimary }]}>
+                        {m.id === user?.id ? 'You' : m.name}
+                      </Text>
+                      {isChecked && amount > 0 && (
+                        <Text style={[styles.shareAmountText, { color: colors.marigold }]}>
+                          ₹{equalShare.toFixed(2)}
+                        </Text>
+                      )}
+                    </Pressable>
+                  );
+                })}
+                {amount > 0 && (
+                  <View style={[styles.splitPreview, { backgroundColor: colors.glowMarigold, marginTop: 8 }]}>
+                    <Ionicons name="people-outline" size={14} color={colors.marigold} />
+                    <Text style={[styles.splitPreviewText, { color: colors.marigold }]}>
+                      ₹{equalShare.toFixed(2)} / person ({activeEqualMembers.length} participating)
+                    </Text>
+                  </View>
+                )}
               </View>
             )}
 
-            {/* Custom amounts */}
-            {splitMode === 'custom' && members.map((m: TripMemberProfile) => (
-              <View key={m.id} style={styles.customRow}>
-                <View style={[styles.memberAvatar, { backgroundColor: colors.glowMarigold, marginRight: 10 }]}>
-                  <Text style={[styles.memberAvatarText, { color: colors.marigold }]}>
-                    {m.name.charAt(0).toUpperCase()}
+            {/* MODE 2: EXACT AMOUNTS */}
+            {splitMode === 'exact' && (
+              <View style={{ marginBottom: 12 }}>
+                {members.map((m: TripMemberProfile) => (
+                  <View key={m.id} style={styles.customRow}>
+                    <View style={[styles.memberAvatar, { backgroundColor: colors.glowMarigold, marginRight: 10 }]}>
+                      <Text style={[styles.memberAvatarText, { color: colors.marigold }]}>
+                        {m.name.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                    <Text style={[styles.customName, { color: colors.textPrimary }]}>
+                      {m.id === user?.id ? 'You' : m.name.split(' ')[0]}
+                    </Text>
+                    <View style={[styles.customInput, { borderColor: colors.cardBorder, backgroundColor: colors.background }]}>
+                      <Text style={{ color: colors.marigold, fontWeight: '700' }}>₹</Text>
+                      <TextInput
+                        style={[styles.customInputText, { color: colors.textPrimary }]}
+                        value={customAmounts[m.id] ?? ''}
+                        onChangeText={(v) => setCustomAmounts((prev) => ({ ...prev, [m.id]: v }))}
+                        placeholder="0.00"
+                        placeholderTextColor={colors.textMuted}
+                        keyboardType="decimal-pad"
+                      />
+                    </View>
+                  </View>
+                ))}
+                {amount > 0 && (
+                  <View style={[
+                    styles.splitPreview,
+                    { backgroundColor: Math.abs(exactTotal - amount) < 0.5 ? colors.glowTeal : 'rgba(225,87,79,0.12)' },
+                  ]}>
+                    <Text style={[
+                      styles.splitPreviewText,
+                      { color: Math.abs(exactTotal - amount) < 0.5 ? colors.teal : colors.coral },
+                    ]}>
+                      Allocated: ₹{exactTotal.toFixed(2)} / ₹{amount.toFixed(2)}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* MODE 3: PERCENTAGES (%) */}
+            {splitMode === 'percentage' && (
+              <View style={{ marginBottom: 12 }}>
+                {members.map((m: TripMemberProfile) => {
+                  const pctVal = parseFloat(percentages[m.id] ?? '0') || 0;
+                  const calculatedAmount = amount > 0 ? (pctVal / 100) * amount : 0;
+                  return (
+                    <View key={m.id} style={styles.customRow}>
+                      <View style={[styles.memberAvatar, { backgroundColor: colors.glowMarigold, marginRight: 10 }]}>
+                        <Text style={[styles.memberAvatarText, { color: colors.marigold }]}>
+                          {m.name.charAt(0).toUpperCase()}
+                        </Text>
+                      </View>
+                      <Text style={[styles.customName, { color: colors.textPrimary }]}>
+                        {m.id === user?.id ? 'You' : m.name.split(' ')[0]}
+                      </Text>
+                      {pctVal > 0 && amount > 0 && (
+                        <Text style={[styles.shareAmountText, { color: colors.textSecondary, marginRight: 10 }]}>
+                          ₹{calculatedAmount.toFixed(2)}
+                        </Text>
+                      )}
+                      <View style={[styles.customInput, { borderColor: colors.cardBorder, backgroundColor: colors.background }]}>
+                        <TextInput
+                          style={[styles.customInputText, { color: colors.textPrimary, width: 48, textAlign: 'right' }]}
+                          value={percentages[m.id] ?? ''}
+                          onChangeText={(v) => setPercentages((prev) => ({ ...prev, [m.id]: v }))}
+                          placeholder="0"
+                          placeholderTextColor={colors.textMuted}
+                          keyboardType="decimal-pad"
+                        />
+                        <Text style={{ color: colors.marigold, fontWeight: '700' }}>%</Text>
+                      </View>
+                    </View>
+                  );
+                })}
+                <View style={[
+                  styles.splitPreview,
+                  { backgroundColor: Math.abs(percentageTotal - 100) < 0.5 ? colors.glowTeal : 'rgba(225,87,79,0.12)' },
+                ]}>
+                  <Text style={[
+                    styles.splitPreviewText,
+                    { color: Math.abs(percentageTotal - 100) < 0.5 ? colors.teal : colors.coral },
+                  ]}>
+                    Total %: {percentageTotal.toFixed(1)}% / 100%
                   </Text>
                 </View>
-                <Text style={[styles.customName, { color: colors.textPrimary }]}>
-                  {m.id === user?.id ? 'You' : m.name.split(' ')[0]}
-                </Text>
-                <View style={[styles.customInput, { borderColor: colors.cardBorder, backgroundColor: colors.background }]}>
-                  <Text style={{ color: colors.marigold, fontWeight: '700' }}>₹</Text>
-                  <TextInput
-                    style={[styles.customInputText, { color: colors.textPrimary }]}
-                    value={customAmounts[m.id] ?? ''}
-                    onChangeText={(v) => setCustomAmounts((prev) => ({ ...prev, [m.id]: v }))}
-                    placeholder="0.00"
-                    placeholderTextColor={colors.textMuted}
-                    keyboardType="decimal-pad"
-                  />
-                </View>
               </View>
-            ))}
+            )}
 
-            {splitMode === 'custom' && amount > 0 && (
-              <View style={[
-                styles.splitPreview,
-                { backgroundColor: Math.abs(customTotal - amount) < 0.5 ? colors.glowTeal : 'rgba(225,87,79,0.12)' },
-              ]}>
-                <Text style={[
-                  styles.splitPreviewText,
-                  { color: Math.abs(customTotal - amount) < 0.5 ? colors.teal : colors.coral },
-                ]}>
-                  Allocated: ₹{customTotal.toFixed(2)} / ₹{amount.toFixed(2)}
-                </Text>
+            {/* MODE 4: SHARES / RATIOS */}
+            {splitMode === 'shares' && (
+              <View style={{ marginBottom: 12 }}>
+                {members.map((m: TripMemberProfile) => {
+                  const count = shares[m.id] ?? 1;
+                  const calculatedAmount = (totalShares > 0 && amount > 0) ? (count / totalShares) * amount : 0;
+                  return (
+                    <View key={m.id} style={styles.customRow}>
+                      <View style={[styles.memberAvatar, { backgroundColor: colors.glowMarigold, marginRight: 10 }]}>
+                        <Text style={[styles.memberAvatarText, { color: colors.marigold }]}>
+                          {m.name.charAt(0).toUpperCase()}
+                        </Text>
+                      </View>
+                      <Text style={[styles.customName, { color: colors.textPrimary }]}>
+                        {m.id === user?.id ? 'You' : m.name.split(' ')[0]}
+                      </Text>
+                      {count > 0 && amount > 0 && (
+                        <Text style={[styles.shareAmountText, { color: colors.textSecondary, marginRight: 10 }]}>
+                          ₹{calculatedAmount.toFixed(2)}
+                        </Text>
+                      )}
+                      <View style={styles.stepperContainer}>
+                        <Pressable
+                          onPress={() => updateShareCount(m.id, -1)}
+                          style={[styles.stepperBtn, { backgroundColor: colors.background, borderColor: colors.cardBorder }]}
+                        >
+                          <Text style={[styles.stepperBtnText, { color: colors.textPrimary }]}>-</Text>
+                        </Pressable>
+                        <Text style={[styles.stepperValueText, { color: colors.marigold }]}>{count}x</Text>
+                        <Pressable
+                          onPress={() => updateShareCount(m.id, 1)}
+                          style={[styles.stepperBtn, { backgroundColor: colors.background, borderColor: colors.cardBorder }]}
+                        >
+                          <Text style={[styles.stepperBtnText, { color: colors.textPrimary }]}>+</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  );
+                })}
+                {totalShares > 0 && (
+                  <View style={[styles.splitPreview, { backgroundColor: colors.glowMarigold }]}>
+                    <Ionicons name="pie-chart-outline" size={14} color={colors.marigold} />
+                    <Text style={[styles.splitPreviewText, { color: colors.marigold }]}>
+                      Total Shares: {totalShares} ({amount > 0 ? `₹${(amount / totalShares).toFixed(2)} / share` : '1 share = 1 part'})
+                    </Text>
+                  </View>
+                )}
               </View>
             )}
 
@@ -451,7 +671,53 @@ const styles = StyleSheet.create({
   },
   splitPreviewText: { fontSize: 13, fontWeight: '600' },
 
-  // Custom split
+  // Custom split & 4-mode split helpers
+  subLabelText: { fontSize: 12, fontWeight: '600', marginBottom: 8 },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    marginBottom: 8,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 6,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  shareAmountText: {
+    fontSize: 13,
+    fontWeight: '700',
+    fontFamily: 'IBMPlexMono-Medium',
+  },
+  stepperContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  stepperBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  stepperBtnText: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  stepperValueText: {
+    fontSize: 14,
+    fontWeight: '800',
+    minWidth: 24,
+    textAlign: 'center',
+  },
   customRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   customName: { flex: 1, fontSize: 14, fontWeight: '600' },
   customInput: {

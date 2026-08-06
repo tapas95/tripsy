@@ -1,3 +1,10 @@
+/**
+ * contacts.ts
+ *
+ * Safely handles device contacts access.
+ * If the native module 'ExpoContacts' is not present in the native build (e.g. standard Expo Go app),
+ * it catches the module loading error gracefully without crashing the app, and provides fallbacks.
+ */
 import { NativeModules } from 'react-native';
 
 export interface DeviceContact {
@@ -7,28 +14,29 @@ export interface DeviceContact {
   email: string | null;
 }
 
-/**
- * Checks if ExpoContacts native module is actually compiled into the app binary
- */
-export const isContactsAvailable = (): boolean => {
+const getContactsModule = () => {
   try {
     const globalExpo = (global as any)?.expo?.modules;
-    const hasExpoContactsModule = !!(
+    const hasExpoContactsNative = !!(
       globalExpo?.ExpoContactsNext ||
       globalExpo?.ExpoContacts ||
       NativeModules?.ExpoContactsNext ||
       NativeModules?.ExpoContacts
     );
 
-    if (!hasExpoContactsModule) {
-      return false;
-    }
-
-    const Contacts = require('expo-contacts');
-    return typeof Contacts?.getContactsAsync === 'function';
+    if (!hasExpoContactsNative) return null;
+    return require('expo-contacts/legacy');
   } catch (_) {
-    return false;
+    return null;
   }
+};
+
+/**
+ * Returns true if the native contacts module is available in the current binary.
+ */
+export const isContactsAvailable = (): boolean => {
+  const ContactsLegacy = getContactsModule();
+  return !!ContactsLegacy && typeof ContactsLegacy.getContactsAsync === 'function';
 };
 
 /**
@@ -41,14 +49,14 @@ export const normalizePhoneNumber = (phone: string): string => {
 };
 
 /**
- * Requests device contacts permission from OS
+ * Requests device contacts permission from OS via legacy API.
  */
 export const requestContactsPermission = async (): Promise<boolean> => {
-  if (!isContactsAvailable()) return false;
+  const ContactsLegacy = getContactsModule();
+  if (!ContactsLegacy) return false;
+
   try {
-    const Contacts = require('expo-contacts');
-    if (!Contacts || typeof Contacts.requestPermissionsAsync !== 'function') return false;
-    const { status } = await Contacts.requestPermissionsAsync();
+    const { status } = await ContactsLegacy.requestPermissionsAsync();
     return status === 'granted';
   } catch (err) {
     console.warn('requestContactsPermission error:', err);
@@ -57,32 +65,48 @@ export const requestContactsPermission = async (): Promise<boolean> => {
 };
 
 /**
- * Fetches contacts list from device
+ * Fetches contacts list from device using legacy API.
  */
 export const getDeviceContacts = async (searchQuery?: string): Promise<DeviceContact[]> => {
-  if (!isContactsAvailable()) return [];
+  const ContactsLegacy = getContactsModule();
+  if (!ContactsLegacy) return [];
+
   try {
-    const Contacts = require('expo-contacts');
-    if (!Contacts || typeof Contacts.getContactsAsync !== 'function') return [];
-    
     const granted = await requestContactsPermission();
     if (!granted) return [];
 
-    const response = await Contacts.getContactsAsync();
-    const data = response?.data || [];
+    const response = await ContactsLegacy.getContactsAsync({
+      fields: [
+        ContactsLegacy.Fields.Name,
+        ContactsLegacy.Fields.FirstName,
+        ContactsLegacy.Fields.LastName,
+        ContactsLegacy.Fields.PhoneNumbers,
+        ContactsLegacy.Fields.Emails,
+      ],
+    });
+
+    const data = response?.data ?? [];
     if (data.length === 0) return [];
 
     const contactsList: DeviceContact[] = [];
 
     for (const item of data) {
-      const name = item.name || `${item.firstName || ''} ${item.lastName || ''}`.trim();
+      const name =
+        item.name ||
+        `${item.firstName ?? ''} ${item.lastName ?? ''}`.trim();
       if (!name) continue;
 
-      const rawPhone = item.phoneNumbers && item.phoneNumbers[0]?.number ? item.phoneNumbers[0].number : null;
-      const rawEmail = item.emails && item.emails[0]?.email ? item.emails[0].email : null;
+      const rawPhone =
+        item.phoneNumbers && item.phoneNumbers[0]?.number
+          ? item.phoneNumbers[0].number
+          : null;
+      const rawEmail =
+        item.emails && item.emails[0]?.email
+          ? item.emails[0].email
+          : null;
 
       contactsList.push({
-        id: item.id || String(Math.random()),
+        id: item.id ?? String(Math.random()),
         name,
         phone: rawPhone ? normalizePhoneNumber(rawPhone) : null,
         email: rawEmail ? rawEmail.toLowerCase().trim() : null,
@@ -99,9 +123,9 @@ export const getDeviceContacts = async (searchQuery?: string): Promise<DeviceCon
       );
     }
 
-    return contactsList;
+    return contactsList.sort((a, b) => a.name.localeCompare(b.name));
   } catch (e) {
-    console.warn('Contacts native module error:', e);
+    console.warn('Contacts error:', e);
     return [];
   }
 };
