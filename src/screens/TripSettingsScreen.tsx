@@ -282,7 +282,7 @@ export const TripSettingsScreen: React.FC<TripSettingsScreenProps> = ({ trip, on
               : (
                 <>
                   <Ionicons name="trash-outline" size={18} color={colors.coral} />
-                  <Text style={[styles.deleteBtnText, { color: colors.coral }]}>Delete Trip</Text>
+                  <Text style={[styles.deleteBtnText, { color: colors.coral }]}>Delete Trip (Admin Only)</Text>
                 </>
               )}
           </Pressable>
