@@ -13,7 +13,6 @@ import {
   FlatList,
   Platform,
 } from 'react-native';
-import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme';
 import { getDeviceContacts, DeviceContact } from '../utils/contacts';
@@ -81,7 +80,14 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({
   };
 
   const handleCopyCode = async () => {
-    await Clipboard.setStringAsync(inviteCode);
+    try {
+      const Clipboard = require('expo-clipboard');
+      if (Clipboard && typeof Clipboard.setStringAsync === 'function') {
+        await Clipboard.setStringAsync(inviteCode);
+      }
+    } catch (_) {
+      // Fallback if native Clipboard module is missing in current dev build
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

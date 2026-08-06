@@ -1,5 +1,3 @@
-import * as Contacts from 'expo-contacts';
-
 export interface DeviceContact {
   id: string;
   name: string;
@@ -20,56 +18,70 @@ export const normalizePhoneNumber = (phone: string): string => {
  * Requests device contacts permission from OS
  */
 export const requestContactsPermission = async (): Promise<boolean> => {
-  const { status } = await Contacts.requestPermissionsAsync();
-  return status === 'granted';
+  try {
+    const Contacts = require('expo-contacts');
+    if (!Contacts || typeof Contacts.requestPermissionsAsync !== 'function') return false;
+    const { status } = await Contacts.requestPermissionsAsync();
+    return status === 'granted';
+  } catch (_) {
+    return false;
+  }
 };
 
 /**
  * Fetches contacts list from device
  */
 export const getDeviceContacts = async (searchQuery?: string): Promise<DeviceContact[]> => {
-  const granted = await requestContactsPermission();
-  if (!granted) return [];
+  try {
+    const Contacts = require('expo-contacts');
+    if (!Contacts || typeof Contacts.getContactsAsync !== 'function') return [];
+    
+    const granted = await requestContactsPermission();
+    if (!granted) return [];
 
-  const { data } = await Contacts.getContactsAsync({
-    fields: [
-      Contacts.Fields.Name,
-      Contacts.Fields.PhoneNumbers,
-      Contacts.Fields.Emails,
-    ],
-    sort: Contacts.SortTypes.FirstName,
-  });
+    const { data } = await Contacts.getContactsAsync({
+      fields: [
+        Contacts.Fields.Name,
+        Contacts.Fields.PhoneNumbers,
+        Contacts.Fields.Emails,
+      ],
+      sort: Contacts.SortTypes.FirstName,
+    });
 
-  if (!data || data.length === 0) return [];
+    if (!data || data.length === 0) return [];
 
-  const contactsList: DeviceContact[] = [];
+    const contactsList: DeviceContact[] = [];
 
-  for (const item of data) {
-    const name = item.name || `${item.firstName || ''} ${item.lastName || ''}`.trim();
-    if (!name) continue;
+    for (const item of data) {
+      const name = item.name || `${item.firstName || ''} ${item.lastName || ''}`.trim();
+      if (!name) continue;
 
-    const rawPhone = item.phoneNumbers && item.phoneNumbers[0]?.number ? item.phoneNumbers[0].number : null;
-    const rawEmail = item.emails && item.emails[0]?.email ? item.emails[0].email : null;
+      const rawPhone = item.phoneNumbers && item.phoneNumbers[0]?.number ? item.phoneNumbers[0].number : null;
+      const rawEmail = item.emails && item.emails[0]?.email ? item.emails[0].email : null;
 
-    if (rawPhone || rawEmail) {
-      contactsList.push({
-        id: item.id || String(Math.random()),
-        name,
-        phone: rawPhone ? normalizePhoneNumber(rawPhone) : null,
-        email: rawEmail ? rawEmail.toLowerCase().trim() : null,
-      });
+      if (rawPhone || rawEmail) {
+        contactsList.push({
+          id: item.id || String(Math.random()),
+          name,
+          phone: rawPhone ? normalizePhoneNumber(rawPhone) : null,
+          email: rawEmail ? rawEmail.toLowerCase().trim() : null,
+        });
+      }
     }
-  }
 
-  if (searchQuery && searchQuery.trim().length > 0) {
-    const q = searchQuery.toLowerCase().trim();
-    return contactsList.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) ||
-        (c.phone && c.phone.includes(q)) ||
-        (c.email && c.email.toLowerCase().includes(q))
-    );
-  }
+    if (searchQuery && searchQuery.trim().length > 0) {
+      const q = searchQuery.toLowerCase().trim();
+      return contactsList.filter(
+        (c) =>
+          c.name.toLowerCase().includes(q) ||
+          (c.phone && c.phone.includes(q)) ||
+          (c.email && c.email.toLowerCase().includes(q))
+      );
+    }
 
-  return contactsList;
+    return contactsList;
+  } catch (e) {
+    console.warn('Contacts native module error:', e);
+    return [];
+  }
 };
