@@ -26,7 +26,8 @@ User
 - id
 - name
 - email
-- avatarUrl
+- phone (nullable, E.164 format e.g. +919876543210)
+- avatarUrl (nullable, public URL with cache-buster timestamp)
 - defaultCurrency
 
 Trip
@@ -35,12 +36,15 @@ Trip
 - startDate
 - endDate
 - currency
+- inviteCode (8-character unique code)
 - createdBy (User.id)
 
 TripMember
 - tripId
-- userId
+- userId (User.id)
 - role ("owner" | "member")
+- invitedPhone (nullable)
+- invitedEmail (nullable)
 - joinedAt
 
 Expense
@@ -51,7 +55,7 @@ Expense
 - date
 - note
 - paidByUserId
-- receiptUrl (nullable)
+- receiptUrl (nullable, public signed URL)
 - createdAt
 
 ExpenseSplit
@@ -59,7 +63,7 @@ ExpenseSplit
 - userId
 - shareAmount
   # one row per person owing a portion of the expense —
-  # equal/custom/percentage splits all resolve to this same shape
+  # equal/custom/percentage/shares splits all resolve to this same shape
 
 Settlement
 - id
@@ -72,49 +76,47 @@ Settlement
 
 ---
 
-## Screens
+## Screens & Feature Breakdown
 
 **Auth flow**
-1. Splash / loading
-2. Login
-3. Sign up
-4. Forgot password
+1. Splash / loading (with deep link & invite code detection)
+2. Login (Email + Google OAuth, password reset redirect)
+3. Sign up (Name, Email, optional Phone number)
+4. Forgot password & Reset password screens
 
 **Core app**
-5. Trip list (home)
-6. Create trip
-7. Join trip (invite code/link)
+5. Trip list (home screen with profile avatar, active trip counters, search bar)
+6. Create trip modal
+7. Join trip modal (invite code & deep link auto-detection)
 8. Trip detail — members, expense feed, balance summary
-9. Trip settings — rename, dates, currency, manage members
+9. Trip settings — rename, start/end dates, currency, manage members, delete trip
 
 **Expenses**
-10. Add expense — amount, category, date, note, paid-by, split method
-11. Split method picker (modal) — equal / custom / percentage
-12. Expense detail — view/edit, see receipt
-13. Attach receipt (modal) — camera/gallery
+10. Add expense — amount, category, date, note, paid-by, receipt attachment, 4-mode split picker
+11. Split method picker — equal (with member toggles), exact, percentage, shares
+12. Expense detail — view/edit expense, edit receipt, see splits
+13. Attach receipt modal — camera & gallery picker (uncropped `resizeMode="contain"`), full-screen viewer modal, remove receipt
 
 **Balances & settlement**
 14. Balances view — simplified "who owes whom" per trip
-15. Settle up — mark a debt paid, optional confirmation
+15. Settle up modal — record debt settlement
 
 **Account**
-16. Profile
-17. Settings — notifications, account, logout
-
-~17 total screens (2 are modals rather than full navigable routes: split picker, receipt attach), so the real navigation stack is ~13-14 screens.
+16. Profile screen — full name update, avatar upload/remove, password update, account deletion
+17. Settings screen — theme, account controls, logout
 
 ---
 
 ## Tech Stack
 
-- **Frontend:** React Native + TypeScript
-- **Styling:** Tailwind via NativeWind
+- **Frontend:** React Native + TypeScript (Expo SDK 57)
+- **Styling:** React Native `StyleSheet` with central Design Token system (`src/theme/`)
 - **Backend:** Supabase (Postgres, Auth, Storage, Realtime)
   - Auth: Supabase Auth (email + Google OAuth)
-  - Database: Postgres tables matching the data model above — relational shape fits split/settlement queries natively
-  - Storage: Supabase Storage for receipt images
-  - Realtime: Supabase Realtime for live trip/expense sync across members' devices
-- **State management:** React Query for server state sync
+  - Database: Postgres tables matching data model with RLS security policies & RPC functions (`join_trip_by_code`, `delete_user_account`)
+  - Storage: Supabase Storage (`avatars` public bucket, `receipts` private bucket)
+  - Realtime: Supabase Realtime channel for live trip & expense sync across members' devices
+- **State management:** React Query (`@tanstack/react-query`) for server state sync
 
 ---
 
