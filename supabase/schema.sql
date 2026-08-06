@@ -15,6 +15,7 @@ create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   name text not null,
   email text not null,
+  phone text,
   avatar_url text,
   default_currency text not null default 'USD',
   created_at timestamptz not null default now()
@@ -25,7 +26,7 @@ create table public.profiles (
 create function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id, name, email, avatar_url)
+  insert into public.profiles (id, name, email, phone, avatar_url)
   values (
     new.id,
     coalesce(
@@ -34,11 +35,14 @@ begin
       'New User'
     ),
     new.email,
+    new.raw_user_meta_data->>'phone',
     coalesce(
       new.raw_user_meta_data->>'avatar_url',
       new.raw_user_meta_data->>'picture'
     )
-  );
+  )
+  on conflict (id) do update set
+    phone = coalesce(excluded.phone, public.profiles.phone);
   return new;
 end;
 $$ language plpgsql security definer;
@@ -73,6 +77,8 @@ create table public.trip_members (
   trip_id uuid not null references public.trips(id) on delete cascade,
   user_id uuid not null references public.profiles(id) on delete cascade,
   role text not null default 'member' check (role in ('owner', 'member')),
+  invited_phone text,
+  invited_email text,
   joined_at timestamptz not null default now(),
   primary key (trip_id, user_id)
 );
@@ -289,6 +295,35 @@ begin
   on conflict (trip_id, user_id) do nothing;
 
   return query select * from public.trips where id = v_trip.id;
+end;
+$$ language plpgsql security definer;
+
+-- RPC FUNCTION: CLAIM PENDING INVITATIONS BY PHONE OR EMAIL
+create or replace function public.claim_pending_invitations()
+returns setof public.trips as $$
+declare
+  v_user_phone text;
+  v_user_email text;
+begin
+  select phone, email into v_user_phone, v_user_email
+  from public.profiles
+  where id = auth.uid();
+
+  -- Add caller to any trips where their phone or email was pre-invited
+  if v_user_phone is not null or v_user_email is not null then
+    insert into public.trip_members (trip_id, user_id, role)
+    select distinct trip_id, auth.uid(), 'member'
+    from public.trip_members
+    where (invited_phone = v_user_phone and v_user_phone is not null)
+       or (invited_email = v_user_email and v_user_email is not null)
+    on conflict (trip_id, user_id) do nothing;
+  end if;
+
+  return query
+    select t.*
+    from public.trips t
+    join public.trip_members tm on tm.trip_id = t.id
+    where tm.user_id = auth.uid();
 end;
 $$ language plpgsql security definer;
 

@@ -15,7 +15,7 @@ import { useTheme } from '../theme';
 import { useAuth } from '../hooks/useAuth';
 import { useTrips } from '../hooks/useTrips';
 import { TripCard } from '../components/TripCard';
-import { TripWithRole } from '../api/trips';
+import { TripWithRole, claimPendingInvitations } from '../api/trips';
 
 interface TripListScreenProps {
   onSelectTrip: (trip: TripWithRole) => void;
@@ -37,6 +37,15 @@ export const TripListScreen: React.FC<TripListScreenProps> = ({
   const { trips, isLoading, refetch } = useTrips();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
+
+  React.useEffect(() => {
+    // Automatically claim any pending trip invitations sent to user's phone or email
+    claimPendingInvitations().then((claimed) => {
+      if (claimed && claimed.length > 0) {
+        refetch();
+      }
+    });
+  }, []);
 
   const filtered = trips.filter((t) =>
     t.name.toLowerCase().includes(searchQuery.toLowerCase())

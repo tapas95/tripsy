@@ -155,3 +155,13 @@ export const deleteTrip = async (tripId: string): Promise<void> => {
 
   if (error) throw new Error(error.message);
 };
+
+export const claimPendingInvitations = async (): Promise<Trip[]> => {
+  try {
+    const { data, error } = await (supabase as any).rpc('claim_pending_invitations');
+    if (!error && data) return data as Trip[];
+  } catch (err) {
+    console.warn('claim_pending_invitations RPC failed:', err);
+  }
+  return [];
+};

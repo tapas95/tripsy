@@ -151,7 +151,7 @@ See `tokens.ts` and `tailwind.config.js` (already generated) for full values. Su
 - All currency amounts rendered in `font.numeric`, right-aligned, tabular-nums
 - Explain file changes after each edit
 - Ask before adding new dependencies
-- Commit after each working step; small reviewable diffs over large ones
+- alweys test after implement anything and make sure there is no error
 
 ---
 
