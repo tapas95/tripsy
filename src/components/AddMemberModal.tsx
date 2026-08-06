@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme';
-import { getDeviceContacts, DeviceContact } from '../utils/contacts';
+import { getDeviceContacts, isContactsAvailable, DeviceContact } from '../utils/contacts';
 import { copyToClipboard } from '../utils/clipboard';
 
 interface AddMemberModalProps {
@@ -116,19 +116,21 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({
   };
 
   const handleManualAdd = async () => {
-    if (!manualName.trim()) {
+    const name = manualName.trim();
+    if (!name) {
       Alert.alert('Error', 'Please enter a name.');
       return;
     }
+
     if (onAddMemberByName) {
       try {
         setIsAdding(true);
-        await onAddMemberByName(manualName.trim(), manualPhone.trim() || undefined);
+        await onAddMemberByName(name, manualPhone.trim() || undefined);
         setManualName('');
         setManualPhone('');
         Alert.alert(
-          'Member Added',
-          `Added ${manualName.trim()}! Share the invite link with them so they can connect.`,
+          'Invite Ready',
+          `Added ${name}! Send the invite link so they can join ${tripName}.`,
           [
             { text: 'Done', onPress: onClose },
             { text: 'Share Link', onPress: handleShareLink },
@@ -139,6 +141,17 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({
       } finally {
         setIsAdding(false);
       }
+    } else {
+      setManualName('');
+      setManualPhone('');
+      Alert.alert(
+        'Send Invite Link',
+        `Send the trip invite link to ${name} via WhatsApp, SMS, or direct link so they can join ${tripName}!`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Share Link', onPress: handleShareLink },
+        ]
+      );
     }
   };
 
@@ -211,18 +224,48 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({
           {/* Tab 1: Phone Contacts */}
           {activeTab === 'contacts' && (
             <View style={styles.tabContent}>
-              <View style={[styles.searchBox, { backgroundColor: colors.background, borderColor: colors.cardBorder }]}>
-                <Ionicons name="search-outline" size={16} color={colors.textMuted} />
-                <TextInput
-                  style={[styles.searchInput, { color: colors.textPrimary }]}
-                  placeholder="Search phone contacts..."
-                  placeholderTextColor={colors.textMuted}
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                />
-              </View>
+              {isContactsAvailable() && (
+                <View style={[styles.searchBox, { backgroundColor: colors.background, borderColor: colors.cardBorder }]}>
+                  <Ionicons name="search-outline" size={16} color={colors.textMuted} />
+                  <TextInput
+                    style={[styles.searchInput, { color: colors.textPrimary }]}
+                    placeholder="Search phone contacts..."
+                    placeholderTextColor={colors.textMuted}
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                  />
+                </View>
+              )}
 
-              {isLoadingContacts ? (
+              {!isContactsAvailable() ? (
+                <View style={styles.emptyBox}>
+                  <Ionicons name="phone-portrait-outline" size={38} color={colors.marigold} />
+                  <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Phone Contacts</Text>
+                  <Text style={[styles.emptySub, { color: colors.textSecondary }]}>
+                    To access device contacts directly, rebuild dev client binary (`npx expo run:android`). Or tap Share Link or Add by Name below!
+                  </Text>
+                  <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
+                    <Pressable
+                      onPress={() => setActiveTab('share')}
+                      style={({ pressed }) => [
+                        { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, backgroundColor: colors.glowMarigold },
+                        pressed && { opacity: 0.8 },
+                      ]}
+                    >
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: colors.marigold }}>Share Link</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => setActiveTab('manual')}
+                      style={({ pressed }) => [
+                        { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, backgroundColor: colors.glowTeal },
+                        pressed && { opacity: 0.8 },
+                      ]}
+                    >
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: colors.teal }}>Add by Name</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ) : isLoadingContacts ? (
                 <View style={styles.loadingBox}>
                   <ActivityIndicator size="small" color={colors.marigold} />
                   <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading contacts...</Text>
@@ -232,8 +275,17 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({
                   <Ionicons name="people-circle-outline" size={40} color={colors.textMuted} />
                   <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>No Contacts Found</Text>
                   <Text style={[styles.emptySub, { color: colors.textSecondary }]}>
-                    Ensure contacts permission is allowed or use Share Link below.
+                    Allow contacts access to pick friends from your address book, or use Share Link.
                   </Text>
+                  <Pressable
+                    onPress={loadContacts}
+                    style={({ pressed }) => [
+                      { marginTop: 12, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 14, backgroundColor: colors.glowMarigold },
+                      pressed && { opacity: 0.8 },
+                    ]}
+                  >
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: colors.marigold }}>Grant Permission / Refresh</Text>
+                  </Pressable>
                 </View>
               ) : (
                 <FlatList

@@ -13,13 +13,19 @@ export interface DeviceContact {
 export const isContactsAvailable = (): boolean => {
   try {
     const globalExpo = (global as any)?.expo?.modules;
-    if (globalExpo && (globalExpo.ExpoContacts || globalExpo.ExpoContactsModule)) {
-      return true;
+    const hasExpoContactsModule = !!(
+      globalExpo?.ExpoContactsNext ||
+      globalExpo?.ExpoContacts ||
+      NativeModules?.ExpoContactsNext ||
+      NativeModules?.ExpoContacts
+    );
+
+    if (!hasExpoContactsModule) {
+      return false;
     }
-    if (NativeModules && (NativeModules.ExpoContacts || NativeModules.ExpoContactsModule)) {
-      return true;
-    }
-    return false;
+
+    const Contacts = require('expo-contacts');
+    return typeof Contacts?.getContactsAsync === 'function';
   } catch (_) {
     return false;
   }
@@ -44,7 +50,8 @@ export const requestContactsPermission = async (): Promise<boolean> => {
     if (!Contacts || typeof Contacts.requestPermissionsAsync !== 'function') return false;
     const { status } = await Contacts.requestPermissionsAsync();
     return status === 'granted';
-  } catch (_) {
+  } catch (err) {
+    console.warn('requestContactsPermission error:', err);
     return false;
   }
 };
@@ -61,16 +68,9 @@ export const getDeviceContacts = async (searchQuery?: string): Promise<DeviceCon
     const granted = await requestContactsPermission();
     if (!granted) return [];
 
-    const { data } = await Contacts.getContactsAsync({
-      fields: [
-        Contacts.Fields.Name,
-        Contacts.Fields.PhoneNumbers,
-        Contacts.Fields.Emails,
-      ],
-      sort: Contacts.SortTypes.FirstName,
-    });
-
-    if (!data || data.length === 0) return [];
+    const response = await Contacts.getContactsAsync();
+    const data = response?.data || [];
+    if (data.length === 0) return [];
 
     const contactsList: DeviceContact[] = [];
 
@@ -81,14 +81,12 @@ export const getDeviceContacts = async (searchQuery?: string): Promise<DeviceCon
       const rawPhone = item.phoneNumbers && item.phoneNumbers[0]?.number ? item.phoneNumbers[0].number : null;
       const rawEmail = item.emails && item.emails[0]?.email ? item.emails[0].email : null;
 
-      if (rawPhone || rawEmail) {
-        contactsList.push({
-          id: item.id || String(Math.random()),
-          name,
-          phone: rawPhone ? normalizePhoneNumber(rawPhone) : null,
-          email: rawEmail ? rawEmail.toLowerCase().trim() : null,
-        });
-      }
+      contactsList.push({
+        id: item.id || String(Math.random()),
+        name,
+        phone: rawPhone ? normalizePhoneNumber(rawPhone) : null,
+        email: rawEmail ? rawEmail.toLowerCase().trim() : null,
+      });
     }
 
     if (searchQuery && searchQuery.trim().length > 0) {

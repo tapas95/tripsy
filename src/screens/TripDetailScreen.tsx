@@ -262,7 +262,10 @@ export const TripDetailScreen: React.FC<TripDetailScreenProps> = ({
                   {/* Text block */}
                   <View style={styles.expenseBody}>
                     <Text style={[styles.expenseTitle, { color: colors.textPrimary }]} numberOfLines={1}>
-                      {item.note || item.category}
+                      {(() => {
+                        const raw = item.note || item.category;
+                        return raw ? raw.charAt(0).toUpperCase() + raw.slice(1) : '';
+                      })()}
                     </Text>
                     <View style={styles.expenseMeta}>
                       <Ionicons name="person-outline" size={11} color={colors.textMuted} />

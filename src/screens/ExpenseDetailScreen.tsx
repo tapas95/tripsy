@@ -284,7 +284,10 @@ export const ExpenseDetailScreen: React.FC<Props> = ({ expense, trip, onBack, on
             />
 
             <Text style={[styles.heroNote, { color: colors.textSecondary }]} numberOfLines={2}>
-              {expense.note || cat.label}
+              {(() => {
+                const raw = expense.note || cat.label;
+                return raw ? raw.charAt(0).toUpperCase() + raw.slice(1) : '';
+              })()}
             </Text>
 
             {/* Meta pills row */}
