@@ -4,6 +4,7 @@ export interface Profile {
   id: string;
   name: string;
   email: string;
+  phone: string | null;
   avatar_url: string | null;
   default_currency: string;
   created_at: string;
@@ -24,6 +25,8 @@ export interface TripMember {
   trip_id: string;
   user_id: string;
   role: TripRole;
+  invited_phone: string | null;
+  invited_email: string | null;
   joined_at: string;
 }
 

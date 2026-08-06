@@ -24,13 +24,14 @@ export const signInWithEmail = async (email: string, password: string) => {
   return data;
 };
 
-export const signUpWithEmail = async (email: string, password: string, name: string) => {
+export const signUpWithEmail = async (email: string, password: string, name: string, phone?: string) => {
   const { data, error } = await supabase.auth.signUp({
     email: email.trim(),
     password,
     options: {
       data: {
         name: name.trim(),
+        phone: phone ? phone.replace(/[^\d+]/g, '') : null,
       },
     },
   });
@@ -134,12 +135,13 @@ export const getCurrentProfile = async (userId: string): Promise<Profile | null>
 
 export const updateProfile = async (
   userId: string,
-  updates: { name?: string; defaultCurrency?: string; avatarUrl?: string | null }
+  updates: { name?: string; defaultCurrency?: string; avatarUrl?: string | null; phone?: string | null }
 ): Promise<void> => {
   const payload: Record<string, any> = {};
   if (updates.name !== undefined)            payload.name             = updates.name.trim();
   if (updates.defaultCurrency !== undefined) payload.default_currency = updates.defaultCurrency;
   if (updates.avatarUrl       !== undefined) payload.avatar_url       = updates.avatarUrl;
+  if (updates.phone           !== undefined) payload.phone            = updates.phone ? updates.phone.replace(/[^\d+]/g, '') : null;
 
   const { error } = await (supabase.from('profiles') as any)
     .update(payload)

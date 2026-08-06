@@ -20,6 +20,7 @@ import { useTripMembers } from '../hooks/useTripMembers';
 import { CurrencyText } from '../components/CurrencyText';
 import { computeBalances } from '../utils/balances';
 import { ExpenseWithDetails } from '../api/expenses';
+import { AddMemberModal } from '../components/AddMemberModal';
 
 // ─── Category config ────────────────────────────────────────────────────────
 import { getCategoryConfig } from '../utils/categories';
@@ -46,6 +47,7 @@ export const TripDetailScreen: React.FC<TripDetailScreenProps> = ({
   const { members } = useTripMembers(trip.id);
   const [activeTab, setActiveTab] = useState<'expenses' | 'balances'>('expenses');
   const [settlingId, setSettlingId] = useState<string | null>(null);
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
 
   const totalSpent = expenses.reduce((s, e) => s + Number(e.amount), 0);
   const isOwner    = trip.role === 'owner';
@@ -75,16 +77,12 @@ export const TripDetailScreen: React.FC<TripDetailScreenProps> = ({
   const fmtDate = (d: string | null) =>
     d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
 
-  const handleShare = async () => {
-    try {
-      await Share.share({
-        message: `Join my Tripsy trip "${trip.name}"!\nInvite code: ${trip.invite_code}`,
-      });
-    } catch (_) {}
+  const handleShare = () => {
+    setShowAddMemberModal(true);
   };
 
   const handleCopyCode = () => {
-    Alert.alert('Invite Code', trip.invite_code, [{ text: 'OK' }]);
+    setShowAddMemberModal(true);
   };
 
   return (
@@ -343,6 +341,13 @@ export const TripDetailScreen: React.FC<TripDetailScreenProps> = ({
           <Text style={styles.fabText}>Add Expense</Text>
         </Pressable>
       </View>
+
+      <AddMemberModal
+        visible={showAddMemberModal}
+        tripName={trip.name}
+        inviteCode={trip.invite_code}
+        onClose={() => setShowAddMemberModal(false)}
+      />
     </View>
   );
 };

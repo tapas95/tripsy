@@ -55,6 +55,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
   const { user, profile, signOut, refreshProfile } = useAuth();
 
   const [name, setName]               = useState(profile?.name ?? '');
+  const [phone, setPhone]             = useState(profile?.phone ?? '');
   const [saved, setSaved]             = useState(false);
   // localAvatarUri holds a freshly picked image URI before/during upload
   // so we can show it immediately without waiting for the remote URL.
@@ -102,7 +103,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
     }
   };
   const updateMutation = useMutation({
-    mutationFn: () => updateProfile(user!.id, { name }),
+    mutationFn: () => updateProfile(user!.id, { name, phone: phone.trim() || null }),
     onSuccess: async () => {
       await refreshProfile();
       setSaved(true);
@@ -279,6 +280,22 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
               onChangeText={setName}
               placeholder="Your name"
               placeholderTextColor={colors.textMuted}
+              returnKeyType="done"
+            />
+          </View>
+
+          <View style={[styles.divider, { backgroundColor: colors.cardBorder }]} />
+
+          <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Phone Number</Text>
+          <View style={[styles.inputRow, { borderColor: colors.cardBorder, backgroundColor: colors.background }]}>
+            <Ionicons name="call-outline" size={16} color={colors.textMuted} />
+            <TextInput
+              style={[styles.inputText, { color: colors.textPrimary }]}
+              value={phone}
+              onChangeText={setPhone}
+              placeholder="+91 98765 43210"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="phone-pad"
               returnKeyType="done"
             />
           </View>

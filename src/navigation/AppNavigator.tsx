@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import * as Clipboard from 'expo-clipboard';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from '../theme';
@@ -249,6 +250,16 @@ export const AppNavigator: React.FC = () => {
     Linking.getInitialURL().then((url) => {
       if (url) handleUrl({ url });
     });
+
+    // Auto-detect invite code from device clipboard on app launch
+    Clipboard.getStringAsync().then((text) => {
+      if (text && (text.includes('tripsy://join?code=') || text.includes('code:'))) {
+        const match = text.match(/code[=:\s]+([A-Z0-9]{4,10})/i);
+        if (match && match[1]) {
+          setPendingInviteCode(match[1].toUpperCase());
+        }
+      }
+    }).catch(() => {});
 
     const subscription = Linking.addEventListener('url', handleUrl);
     return () => subscription.remove();

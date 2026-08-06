@@ -30,6 +30,7 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({
   const { signUp, signInWithGoogle, session } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -57,7 +58,7 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({
 
     try {
       setIsLoading(true);
-      await signUp(email, password, name);
+      await signUp(email, password, name, phone.trim() || undefined);
       
       // If no session created immediately (email confirmation enabled), show verification UI
       if (!session) {
@@ -132,6 +133,14 @@ export const SignUpScreen: React.FC<SignUpScreenProps> = ({
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
+            />
+
+            <Input
+              label="Phone Number (Optional)"
+              placeholder="+91 98765 43210"
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
             />
 
             <Input

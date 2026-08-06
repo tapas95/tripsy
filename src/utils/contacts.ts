@@ -1,0 +1,75 @@
+import * as Contacts from 'expo-contacts';
+
+export interface DeviceContact {
+  id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+}
+
+/**
+ * Normalizes phone number into E.164 international format (+1234567890)
+ */
+export const normalizePhoneNumber = (phone: string): string => {
+  const cleaned = phone.replace(/[^\d+]/g, '');
+  if (!cleaned) return '';
+  return cleaned.startsWith('+') ? cleaned : `+${cleaned}`;
+};
+
+/**
+ * Requests device contacts permission from OS
+ */
+export const requestContactsPermission = async (): Promise<boolean> => {
+  const { status } = await Contacts.requestPermissionsAsync();
+  return status === 'granted';
+};
+
+/**
+ * Fetches contacts list from device
+ */
+export const getDeviceContacts = async (searchQuery?: string): Promise<DeviceContact[]> => {
+  const granted = await requestContactsPermission();
+  if (!granted) return [];
+
+  const { data } = await Contacts.getContactsAsync({
+    fields: [
+      Contacts.Fields.Name,
+      Contacts.Fields.PhoneNumbers,
+      Contacts.Fields.Emails,
+    ],
+    sort: Contacts.SortTypes.FirstName,
+  });
+
+  if (!data || data.length === 0) return [];
+
+  const contactsList: DeviceContact[] = [];
+
+  for (const item of data) {
+    const name = item.name || `${item.firstName || ''} ${item.lastName || ''}`.trim();
+    if (!name) continue;
+
+    const rawPhone = item.phoneNumbers && item.phoneNumbers[0]?.number ? item.phoneNumbers[0].number : null;
+    const rawEmail = item.emails && item.emails[0]?.email ? item.emails[0].email : null;
+
+    if (rawPhone || rawEmail) {
+      contactsList.push({
+        id: item.id || String(Math.random()),
+        name,
+        phone: rawPhone ? normalizePhoneNumber(rawPhone) : null,
+        email: rawEmail ? rawEmail.toLowerCase().trim() : null,
+      });
+    }
+  }
+
+  if (searchQuery && searchQuery.trim().length > 0) {
+    const q = searchQuery.toLowerCase().trim();
+    return contactsList.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        (c.phone && c.phone.includes(q)) ||
+        (c.email && c.email.toLowerCase().includes(q))
+    );
+  }
+
+  return contactsList;
+};

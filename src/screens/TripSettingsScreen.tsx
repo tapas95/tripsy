@@ -17,6 +17,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useTripMembers } from '../hooks/useTripMembers';
 import { TripWithRole, updateTrip, removeTripMember, deleteTrip } from '../api/trips';
 import { DatePickerInput } from '../components/DatePickerInput';
+import { AddMemberModal } from '../components/AddMemberModal';
 
 interface TripSettingsScreenProps {
   trip: TripWithRole;
@@ -35,6 +36,7 @@ export const TripSettingsScreen: React.FC<TripSettingsScreenProps> = ({ trip, on
 
   // Form state seeded from current trip values
   const [name, setName]             = useState(trip.name);
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [startDate, setStartDate]   = useState<Date | null>(
     trip.start_date ? new Date(trip.start_date) : null
   );
@@ -185,7 +187,22 @@ export const TripSettingsScreen: React.FC<TripSettingsScreenProps> = ({ trip, on
         </Pressable>
 
         {/* ── Members ── */}
-        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>MEMBERS ({members.length})</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, marginTop: 4 }}>
+          <Text style={[styles.sectionLabel, { color: colors.textSecondary, marginBottom: 0, marginTop: 0 }]}>
+            MEMBERS ({members.length})
+          </Text>
+          <Pressable
+            onPress={() => setShowAddMemberModal(true)}
+            style={({ pressed }) => [
+              { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, backgroundColor: colors.glowMarigold },
+              pressed && { opacity: 0.8 },
+            ]}
+          >
+            <Ionicons name="person-add" size={13} color={colors.marigold} />
+            <Text style={{ fontSize: 12, fontWeight: '700', color: colors.marigold }}>+ Invite Member</Text>
+          </Pressable>
+        </View>
+
         <View style={[styles.card, { backgroundColor: colors.cardSurface, borderColor: colors.cardBorder }]}>
           {members.map((member, idx) => {
             const isOwnerRow = member.role === 'owner';
@@ -273,6 +290,13 @@ export const TripSettingsScreen: React.FC<TripSettingsScreenProps> = ({ trip, on
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      <AddMemberModal
+        visible={showAddMemberModal}
+        tripName={trip.name}
+        inviteCode={trip.invite_code}
+        onClose={() => setShowAddMemberModal(false)}
+      />
     </View>
   );
 };
