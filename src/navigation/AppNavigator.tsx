@@ -172,6 +172,7 @@ const AppStack: React.FC<{ pendingInviteCode?: string; onClearInviteCode?: () =>
             <TripSettingsScreen
               trip={route.params.trip}
               onBack={() => navigation.goBack()}
+              onDeleted={() => navigation.popToTop()}
             />
           )}
         </AppNav.Screen>

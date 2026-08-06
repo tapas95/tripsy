@@ -22,13 +22,14 @@ import { AddMemberModal } from '../components/AddMemberModal';
 interface TripSettingsScreenProps {
   trip: TripWithRole;
   onBack: () => void;
+  onDeleted?: () => void;
 }
 
 const PAD = 16;
 const R   = 16;
 const BW  = 1.5;
 
-export const TripSettingsScreen: React.FC<TripSettingsScreenProps> = ({ trip, onBack }) => {
+export const TripSettingsScreen: React.FC<TripSettingsScreenProps> = ({ trip, onBack, onDeleted }) => {
   const { colors } = useTheme();
   const { user } = useAuth();
   const { members, refetch: refetchMembers } = useTripMembers(trip.id);
@@ -96,7 +97,11 @@ export const TripSettingsScreen: React.FC<TripSettingsScreenProps> = ({ trip, on
     mutationFn: () => deleteTrip(trip.id),
     onSuccess: () => {
       invalidateTrips();
-      onBack();
+      if (onDeleted) {
+        onDeleted();
+      } else {
+        onBack();
+      }
     },
     onError: (e: any) => Alert.alert('Error', e.message),
   });
