@@ -501,13 +501,14 @@ const styles = StyleSheet.create({
   // Info card
   infoCard: {
     paddingHorizontal: PAD_H,
-    paddingTop: 10,
+    paddingTop: 12,
+    paddingBottom: 10,
     borderBottomWidth: 1,
   },
   statsRow: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    paddingVertical: 10,
+    paddingBottom: 10,
   },
   statItem: {
     flex: 1,
@@ -659,7 +660,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 0,
-    paddingVertical: 10,
+    paddingTop: 10,
+    paddingBottom: 2,
     borderTopWidth: 1,
   },
   membersAvatarsRow: {
