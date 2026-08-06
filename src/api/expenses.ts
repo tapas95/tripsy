@@ -26,6 +26,7 @@ export const createExpense = async (expenseData: {
   date?: string;
   note?: string;
   paidByUserId: string;
+  receiptUri?: string;
   splits: { userId: string; shareAmount: number }[];
 }): Promise<Expense> => {
   const { data: newExpense, error: expenseError } = await (supabase.from('expenses') as any)
@@ -58,6 +59,18 @@ export const createExpense = async (expenseData: {
 
     if (splitError) {
       throw new Error(splitError.message);
+    }
+  }
+
+  // Upload receipt if provided
+  if (expenseData.receiptUri) {
+    try {
+      const { uploadReceipt, setExpenseReceiptUrl } = await import('./storage');
+      const receiptUrl = await uploadReceipt(expenseData.receiptUri, expenseData.tripId, newExpense.id);
+      await setExpenseReceiptUrl(newExpense.id, receiptUrl);
+      newExpense.receipt_url = receiptUrl;
+    } catch (err) {
+      console.warn('Failed to upload receipt during expense creation:', err);
     }
   }
 

@@ -33,9 +33,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string, currentUser?: User | null) => {
     try {
-      const userProfile = await getCurrentProfile(userId);
+      let userProfile = await getCurrentProfile(userId);
+      if (userProfile && currentUser?.user_metadata) {
+        const googleAvatar = currentUser.user_metadata.avatar_url || currentUser.user_metadata.picture;
+        const googleName = currentUser.user_metadata.full_name || currentUser.user_metadata.name;
+
+        let needsUpdate = false;
+        const updates: { avatarUrl?: string; name?: string } = {};
+
+        if (!userProfile.avatar_url && googleAvatar) {
+          updates.avatarUrl = googleAvatar;
+          needsUpdate = true;
+        }
+        if (googleName && (userProfile.name === 'New User' || !userProfile.name)) {
+          updates.name = googleName;
+          needsUpdate = true;
+        }
+
+        if (needsUpdate) {
+          const { updateProfile } = await import('../api/auth');
+          await updateProfile(userId, updates);
+          userProfile = await getCurrentProfile(userId);
+        }
+      }
       setProfile(userProfile);
     } catch (err) {
       console.warn('Could not fetch user profile:', err);
@@ -47,7 +69,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id);
+        fetchProfile(session.user.id, session.user);
       }
       setIsLoading(false);
     });
@@ -60,7 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          await fetchProfile(session.user.id);
+          await fetchProfile(session.user.id, session.user);
         } else {
           setProfile(null);
         }

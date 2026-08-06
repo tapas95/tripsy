@@ -36,6 +36,7 @@ export const useExpenses = (tripId: string) => {
       date?: string;
       note?: string;
       paidByUserId: string;
+      receiptUri?: string;
       splits: { userId: string; shareAmount: number }[];
     }) => createExpense({ ...data, tripId }),
     onSuccess: () => {

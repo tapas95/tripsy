@@ -83,18 +83,26 @@ export const joinTripByCode = async (inviteCode: string, userId: string): Promis
   });
 
   if (!rpcError && rpcTrip) {
-    // RPC returns trip object or array
     const trip = Array.isArray(rpcTrip) ? rpcTrip[0] : rpcTrip;
-    return trip as Trip;
+    if (trip && trip.id) {
+      return trip as Trip;
+    }
+  }
+
+  if (rpcError) {
+    console.warn('join_trip_by_code RPC error:', rpcError.message);
   }
 
   // Fallback if RPC function is not created in DB yet
   const { data: trip, error: tripError } = await (supabase.from('trips') as any)
     .select('*')
-    .eq('invite_code', cleanCode)
+    .ilike('invite_code', cleanCode)
     .single();
 
   if (tripError || !trip) {
+    if (rpcError) {
+      throw new Error(`Could not join trip. Please ensure database RPC 'join_trip_by_code' is created in Supabase.`);
+    }
     throw new Error('Invalid invite code. No trip found.');
   }
 

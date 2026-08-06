@@ -67,6 +67,7 @@ export const ReceiptPickerModal: React.FC<ReceiptPickerModalProps> = ({
   const { colors } = useTheme();
   const [uploadState, setUploadState] = useState<UploadState>('idle');
   const [progress, setProgress] = useState<string>('');
+  const [showFullImage, setShowFullImage] = useState<boolean>(false);
 
   const isBusy = uploadState !== 'idle';
 
@@ -103,9 +104,8 @@ export const ReceiptPickerModal: React.FC<ReceiptPickerModalProps> = ({
 
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ['images'],
-      quality: 0.82,
-      allowsEditing: true,
-      aspect: [4, 3],
+      quality: 0.85,
+      allowsEditing: false,
     });
 
     if (result.canceled || !result.assets?.[0]?.uri) {
@@ -124,9 +124,8 @@ export const ReceiptPickerModal: React.FC<ReceiptPickerModalProps> = ({
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      quality: 0.82,
-      allowsEditing: true,
-      aspect: [4, 3],
+      quality: 0.85,
+      allowsEditing: false,
     });
 
     if (result.canceled || !result.assets?.[0]?.uri) {
@@ -168,117 +167,150 @@ export const ReceiptPickerModal: React.FC<ReceiptPickerModalProps> = ({
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
-    <Modal
-      visible={visible}
-      animationType="fade"
-      transparent
-      onRequestClose={isBusy ? undefined : onClose}
-      statusBarTranslucent
-    >
-      <Pressable
-        style={[styles.backdrop, { backgroundColor: colors.overlay }]}
-        onPress={isBusy ? undefined : onClose}
+    <>
+      <Modal
+        visible={visible}
+        animationType="fade"
+        transparent
+        onRequestClose={isBusy ? undefined : onClose}
+        statusBarTranslucent
       >
-        {/* Prevent backdrop press from closing while busy */}
         <Pressable
-          style={[styles.sheet, { backgroundColor: colors.cardSurface }]}
-          onPress={(e) => e.stopPropagation()}
+          style={[styles.backdrop, { backgroundColor: colors.overlay }]}
+          onPress={isBusy ? undefined : onClose}
         >
-          {/* Drag handle */}
-          <View style={[styles.handle, { backgroundColor: colors.cardBorder }]} />
+          {/* Prevent backdrop press from closing while busy */}
+          <Pressable
+            style={[styles.sheet, { backgroundColor: colors.cardSurface }]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            {/* Drag handle */}
+            <View style={[styles.handle, { backgroundColor: colors.cardBorder }]} />
 
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={[styles.title, { color: colors.textPrimary }]}>
-              {currentReceiptUrl ? 'Change Receipt' : 'Attach Receipt'}
-            </Text>
-            {!isBusy && (
-              <Pressable
-                onPress={onClose}
-                hitSlop={10}
-                style={[styles.closeBtn, { backgroundColor: colors.cardBorder }]}
-              >
-                <Ionicons name="close" size={17} color={colors.textSecondary} />
-              </Pressable>
-            )}
-          </View>
-
-          <ScrollView showsVerticalScrollIndicator={false}>
-            {/* ── Current receipt preview ── */}
-            {currentReceiptUrl && (
-              <View style={styles.previewSection}>
-                <Image
-                  source={{ uri: currentReceiptUrl }}
-                  style={[styles.preview, { borderColor: colors.cardBorder }]}
-                  resizeMode="cover"
-                />
-                <View style={[styles.previewBadge, { backgroundColor: colors.glowTeal }]}>
-                  <Ionicons name="checkmark-circle" size={13} color={colors.teal} />
-                  <Text style={[styles.previewBadgeText, { color: colors.teal }]}>
-                    Receipt attached
-                  </Text>
-                </View>
-              </View>
-            )}
-
-            {/* ── Upload progress overlay ── */}
-            {isBusy && (
-              <View style={[styles.progressBox, { backgroundColor: colors.glowMarigold }]}>
-                <ActivityIndicator size="small" color={colors.marigold} />
-                <Text style={[styles.progressText, { color: colors.marigold }]}>
-                  {uploadState === 'picking'   && 'Opening picker…'}
-                  {uploadState === 'uploading' && progress}
-                  {uploadState === 'removing'  && 'Removing receipt…'}
-                </Text>
-              </View>
-            )}
-
-            {/* ── Action buttons ── */}
-            <View style={styles.actions}>
-              {/* Camera */}
-              <ActionBtn
-                icon="camera-outline"
-                label="Take Photo"
-                sublabel="Open camera"
-                color={colors.marigold}
-                bg={colors.glowMarigold}
-                onPress={handleCamera}
-                disabled={isBusy}
-                colors={colors}
-              />
-
-              {/* Gallery */}
-              <ActionBtn
-                icon="images-outline"
-                label="Choose from Library"
-                sublabel="Pick from camera roll"
-                color={colors.teal}
-                bg={colors.glowTeal}
-                onPress={handleGallery}
-                disabled={isBusy}
-                colors={colors}
-              />
-
-              {/* Remove — only shown if receipt already exists */}
-              {currentReceiptUrl && (
-                <ActionBtn
-                  icon="trash-outline"
-                  label="Remove Receipt"
-                  sublabel="Delete attached photo"
-                  color={colors.coral}
-                  bg="rgba(225,87,79,0.12)"
-                  onPress={handleRemove}
-                  disabled={isBusy}
-                  colors={colors}
-                />
+            {/* Header */}
+            <View style={styles.header}>
+              <Text style={[styles.title, { color: colors.textPrimary }]}>
+                {currentReceiptUrl ? 'Change Receipt' : 'Attach Receipt'}
+              </Text>
+              {!isBusy && (
+                <Pressable
+                  onPress={onClose}
+                  hitSlop={10}
+                  style={[styles.closeBtn, { backgroundColor: colors.cardBorder }]}
+                >
+                  <Ionicons name="close" size={17} color={colors.textSecondary} />
+                </Pressable>
               )}
             </View>
 
-            <View style={{ height: 16 }} />
-          </ScrollView>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {/* ── Current receipt preview ── */}
+              {currentReceiptUrl && (
+                <View style={styles.previewSection}>
+                  <Pressable
+                    onPress={() => setShowFullImage(true)}
+                    style={({ pressed }) => [styles.previewContainer, { borderColor: colors.cardBorder, backgroundColor: '#000' }, pressed && { opacity: 0.9 }]}
+                  >
+                    <Image
+                      source={{ uri: currentReceiptUrl }}
+                      style={styles.preview}
+                      resizeMode="contain"
+                    />
+                    <View style={styles.zoomHint}>
+                      <Ionicons name="expand-outline" size={14} color="#FFF" />
+                      <Text style={styles.zoomHintText}>Tap for full view</Text>
+                    </View>
+                  </Pressable>
+                  <View style={[styles.previewBadge, { backgroundColor: colors.glowTeal }]}>
+                    <Ionicons name="checkmark-circle" size={13} color={colors.teal} />
+                    <Text style={[styles.previewBadgeText, { color: colors.teal }]}>
+                      Receipt attached
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              {/* ── Upload progress overlay ── */}
+              {isBusy && (
+                <View style={[styles.progressBox, { backgroundColor: colors.glowMarigold }]}>
+                  <ActivityIndicator size="small" color={colors.marigold} />
+                  <Text style={[styles.progressText, { color: colors.marigold }]}>
+                    {uploadState === 'picking'   && 'Opening picker…'}
+                    {uploadState === 'uploading' && progress}
+                    {uploadState === 'removing'  && 'Removing receipt…'}
+                  </Text>
+                </View>
+              )}
+
+              {/* ── Action buttons ── */}
+              <View style={styles.actions}>
+                {/* Camera */}
+                <ActionBtn
+                  icon="camera-outline"
+                  label="Take Photo"
+                  sublabel="Open camera"
+                  color={colors.marigold}
+                  bg={colors.glowMarigold}
+                  onPress={handleCamera}
+                  disabled={isBusy}
+                  colors={colors}
+                />
+
+                {/* Gallery */}
+                <ActionBtn
+                  icon="images-outline"
+                  label="Choose from Library"
+                  sublabel="Pick from camera roll"
+                  color={colors.teal}
+                  bg={colors.glowTeal}
+                  onPress={handleGallery}
+                  disabled={isBusy}
+                  colors={colors}
+                />
+
+                {/* Remove — only shown if receipt already exists */}
+                {currentReceiptUrl && (
+                  <ActionBtn
+                    icon="trash-outline"
+                    label="Remove Receipt"
+                    sublabel="Delete attached photo"
+                    color={colors.coral}
+                    bg="rgba(225,87,79,0.12)"
+                    onPress={handleRemove}
+                    disabled={isBusy}
+                    colors={colors}
+                  />
+                )}
+              </View>
+
+              <View style={{ height: 16 }} />
+            </ScrollView>
+          </Pressable>
         </Pressable>
-      </Pressable>
-    </Modal>
+      </Modal>
+
+      {/* ── Fullscreen Receipt Viewer ── */}
+      <Modal
+        visible={showFullImage}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowFullImage(false)}
+        statusBarTranslucent
+      >
+        <View style={styles.fullImageContainer}>
+          <Pressable style={styles.fullImageCloseBtn} onPress={() => setShowFullImage(false)} hitSlop={10}>
+            <Ionicons name="close-circle" size={38} color="#FFF" />
+          </Pressable>
+          {currentReceiptUrl && (
+            <Image
+              source={{ uri: currentReceiptUrl }}
+              style={styles.fullImage}
+              resizeMode="contain"
+            />
+          )}
+        </View>
+      </Modal>
+    </>
   );
 };
 
@@ -345,18 +377,61 @@ const styles = StyleSheet.create({
 
   // Preview
   previewSection: { marginBottom: 14, alignItems: 'center' },
-  preview: {
+  previewContainer: {
     width: '100%',
-    height: 200,
+    height: 240,
     borderRadius: 14,
     borderWidth: 1.5,
     marginBottom: 8,
+    overflow: 'hidden',
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  preview: {
+    width: '100%',
+    height: '100%',
+  },
+  zoomHint: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  zoomHintText: {
+    color: '#FFF',
+    fontSize: 11,
+    fontWeight: '600',
   },
   previewBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
     paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20,
   },
   previewBadgeText: { fontSize: 12, fontWeight: '700' },
+
+  // Fullscreen Viewer
+  fullImageContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullImageCloseBtn: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 20,
+  },
+  fullImage: {
+    width: '100%',
+    height: '100%',
+  },
 
   // Progress
   progressBox: {

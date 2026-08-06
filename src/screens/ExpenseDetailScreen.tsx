@@ -427,6 +427,36 @@ export const ExpenseDetailScreen: React.FC<Props> = ({ expense, trip, onBack, on
               })}
             </ScrollView>
 
+            {/* Receipt section in Edit form */}
+            <Text style={[styles.label, { color: colors.textSecondary }]}>RECEIPT</Text>
+            <Pressable
+              onPress={() => setShowReceiptPicker(true)}
+              style={({ pressed }) => [
+                styles.editReceiptBtn,
+                {
+                  backgroundColor: colors.background,
+                  borderColor: receiptUrl ? colors.teal : colors.cardBorder,
+                },
+                pressed && { opacity: 0.85 },
+              ]}
+            >
+              {receiptUrl ? (
+                <View style={styles.editReceiptContent}>
+                  <Image source={{ uri: receiptUrl }} style={styles.editReceiptThumb} resizeMode="contain" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.editReceiptTitle, { color: colors.textPrimary }]}>Receipt Attached</Text>
+                    <Text style={[styles.editReceiptSub, { color: colors.teal }]}>Tap to change or remove</Text>
+                  </View>
+                  <Ionicons name="create-outline" size={18} color={colors.marigold} />
+                </View>
+              ) : (
+                <View style={styles.editReceiptPlaceholder}>
+                  <Ionicons name="camera-outline" size={18} color={colors.marigold} />
+                  <Text style={[styles.editReceiptPlaceholderText, { color: colors.textPrimary }]}>Attach receipt photo</Text>
+                </View>
+              )}
+            </Pressable>
+
             {/* Split mode */}
             <Text style={[styles.label, { color: colors.textSecondary }]}>SPLIT</Text>
             <View style={[styles.splitToggle, { backgroundColor: colors.background, borderColor: colors.cardBorder }]}>
@@ -753,4 +783,42 @@ const styles = StyleSheet.create({
     gap: 8, paddingVertical: 16,
   },
   receiptPlaceholderText: { fontSize: 14, fontWeight: '600' },
+
+  // Edit Receipt Field
+  editReceiptBtn: {
+    borderWidth: 1.5,
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 16,
+  },
+  editReceiptContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  editReceiptThumb: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    backgroundColor: '#000',
+  },
+  editReceiptTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  editReceiptSub: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  editReceiptPlaceholder: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 10,
+  },
+  editReceiptPlaceholderText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
 });

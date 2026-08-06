@@ -9,7 +9,9 @@ import {
   Platform,
   ScrollView,
   TextInput,
+  Image,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme';
 import { DatePickerInput } from './DatePickerInput';
@@ -48,9 +50,25 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   const [splitMode, setSplitMode]   = useState<SplitMode>('equal');
   // custom split amounts keyed by userId
   const [customAmounts, setCustomAmounts] = useState<Record<string, string>>({});
-  const [error, setError]           = useState<string | null>(null);
+  const [receiptUri, setReceiptUri]       = useState<string | null>(null);
+  const [error, setError]                 = useState<string | null>(null);
 
   const amount = parseFloat(amountStr) || 0;
+
+  const handlePickReceipt = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') return;
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.85,
+      allowsEditing: false,
+    });
+
+    if (!result.canceled && result.assets?.[0]?.uri) {
+      setReceiptUri(result.assets[0].uri);
+    }
+  };
 
   // Equal split per member
   const equalShare = useMemo(() => {
@@ -71,6 +89,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
     setPaidById(user?.id ?? '');
     setSplitMode('equal');
     setCustomAmounts({});
+    setReceiptUri(null);
     setError(null);
   };
 
@@ -101,6 +120,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
         date: expenseDate.toISOString().split('T')[0],
         note: note.trim() || undefined,
         paidByUserId: paidById,
+        receiptUri: receiptUri || undefined,
         splits,
       });
       reset();
@@ -223,6 +243,33 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                 );
               })}
             </ScrollView>
+
+            {/* Receipt Attachment */}
+            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>RECEIPT (OPTIONAL)</Text>
+            {receiptUri ? (
+              <View style={[styles.receiptPreviewRow, { borderColor: colors.cardBorder, backgroundColor: colors.background }]}>
+                <Image source={{ uri: receiptUri }} style={styles.receiptPreviewThumb} resizeMode="cover" />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.receiptAttachedTitle, { color: colors.textPrimary }]}>Receipt photo attached</Text>
+                  <Text style={[styles.receiptAttachedSub, { color: colors.teal }]}>Will upload on save</Text>
+                </View>
+                <Pressable onPress={() => setReceiptUri(null)} hitSlop={10}>
+                  <Ionicons name="close-circle" size={22} color={colors.coral} />
+                </Pressable>
+              </View>
+            ) : (
+              <Pressable
+                onPress={handlePickReceipt}
+                style={({ pressed }) => [
+                  styles.attachReceiptBtn,
+                  { backgroundColor: colors.background, borderColor: colors.cardBorder },
+                  pressed && { opacity: 0.8 },
+                ]}
+              >
+                <Ionicons name="camera-outline" size={18} color={colors.marigold} />
+                <Text style={[styles.attachReceiptText, { color: colors.textPrimary }]}>Attach receipt photo</Text>
+              </Pressable>
+            )}
 
             {/* Split Mode */}
             <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>SPLIT</Text>
@@ -420,6 +467,45 @@ const styles = StyleSheet.create({
     padding: 10, borderRadius: 10, borderWidth: 1, marginBottom: 12,
   },
   errorText: { fontSize: 13, fontWeight: '600', flex: 1 },
+
+  // Receipt attachment
+  attachReceiptBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    height: 46,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    marginBottom: 16,
+  },
+  attachReceiptText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  receiptPreviewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    marginBottom: 16,
+    gap: 12,
+  },
+  receiptPreviewThumb: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+  },
+  receiptAttachedTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  receiptAttachedSub: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
 
   // Save
   saveBtn: { height: 52, borderRadius: 16, justifyContent: 'center', alignItems: 'center', marginTop: 4 },

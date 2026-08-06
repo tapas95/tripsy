@@ -44,9 +44,15 @@ export const Button: React.FC<ButtonProps> = ({
           backgroundColor: 'transparent',
           borderWidth: 1.5,
           borderColor: colors.cardBorder,
+          elevation: 0,
+          shadowOpacity: 0,
         };
       case 'ghost':
-        return { backgroundColor: 'transparent' };
+        return {
+          backgroundColor: 'transparent',
+          elevation: 0,
+          shadowOpacity: 0,
+        };
     }
   };
 
@@ -106,11 +112,13 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     marginRight: 10,
+    backgroundColor: 'transparent',
   },
   text: {
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 0.2,
+    backgroundColor: 'transparent',
   },
   pressed: {
     opacity: 0.85,

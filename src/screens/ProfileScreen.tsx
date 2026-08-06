@@ -9,6 +9,7 @@ import {
   Alert,
   ActivityIndicator,
   Image,
+  Modal,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,8 +17,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { useMutation } from '@tanstack/react-query';
 import { useTheme } from '../theme';
 import { useAuth } from '../hooks/useAuth';
-import { updateProfile, updateUserPassword } from '../api/auth';
-import { uploadAvatar } from '../api/storage';
+import { updateProfile, updateUserPassword, deleteAccount } from '../api/auth';
+import { uploadAvatar, deleteAvatar } from '../api/storage';
 
 interface ProfileScreenProps {
   onBack: () => void;
@@ -130,41 +131,53 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
     }
   };
 
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
+
+  const handleCameraPick = async () => {
+    setShowAvatarModal(false);
+    if (!(await ensureCameraPermission())) return;
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      await handlePickedUri(result.assets[0].uri);
+    }
+  };
+
+  const handleGalleryPick = async () => {
+    setShowAvatarModal(false);
+    if (!(await ensureGalleryPermission())) return;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      await handlePickedUri(result.assets[0].uri);
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    setShowAvatarModal(false);
+    setIsUploadingAvatar(true);
+    try {
+      await deleteAvatar(user!.id);
+      await updateProfile(user!.id, { avatarUrl: null });
+      await refreshProfile();
+      setLocalAvatarUri(null);
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Could not remove avatar.');
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
   const handleAvatarPress = () => {
-    // Action sheet pattern — show options without a native ActionSheetIOS dep
-    Alert.alert('Change Avatar', 'Choose a photo source', [
-      {
-        text: 'Camera',
-        onPress: async () => {
-          if (!(await ensureCameraPermission())) return;
-          const result = await ImagePicker.launchCameraAsync({
-            mediaTypes: ['images'],
-            allowsEditing: true,
-            aspect: [1, 1],       // Force square crop — perfect for a circle avatar
-            quality: 0.8,
-          });
-          if (!result.canceled && result.assets[0]) {
-            await handlePickedUri(result.assets[0].uri);
-          }
-        },
-      },
-      {
-        text: 'Photo Library',
-        onPress: async () => {
-          if (!(await ensureGalleryPermission())) return;
-          const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ['images'],
-            allowsEditing: true,
-            aspect: [1, 1],
-            quality: 0.8,
-          });
-          if (!result.canceled && result.assets[0]) {
-            await handlePickedUri(result.assets[0].uri);
-          }
-        },
-      },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
+    setShowAvatarModal(true);
   };
 
   const handleSignOut = () => {
@@ -172,6 +185,27 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
       { text: 'Cancel', style: 'cancel' },
       { text: 'Sign Out', style: 'destructive', onPress: () => signOut() },
     ]);
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'Are you sure you want to permanently delete your account? This action cannot be undone and will delete all your data.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Account',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteAccount(user!.id);
+            } catch (e: any) {
+              Alert.alert('Error', e.message || 'Could not delete account.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   // What to display in the avatar: local preview > remote URL > initials fallback
@@ -206,7 +240,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
             {/* Photo or initials */}
             {avatarSource ? (
               <Image
-                source={{ uri: avatarSource }}
+                source={{ uri: avatarSource, cache: 'reload' }}
                 style={[styles.avatarCircle, { borderColor: colors.marigold }]}
               />
             ) : (
@@ -331,12 +365,14 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
 
 
 
-        {/* ── Sign Out ── */}
+        {/* ── Danger Zone ── */}
+        <Text style={[styles.sectionLabel, { color: colors.coral, marginTop: 12 }]}>DANGER ZONE</Text>
+
         <Pressable
           onPress={handleSignOut}
           style={({ pressed }) => [
             styles.signOutBtn,
-            { borderColor: 'rgba(225,87,79,0.4)', backgroundColor: 'rgba(225,87,79,0.08)' },
+            { borderColor: 'rgba(225, 87, 79, 0.3)', backgroundColor: 'rgba(225, 87, 79, 0.1)' },
             pressed && styles.pressed,
           ]}
         >
@@ -344,8 +380,80 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onBack }) => {
           <Text style={[styles.signOutText, { color: colors.coral }]}>Sign Out</Text>
         </Pressable>
 
+        <Pressable
+          onPress={handleDeleteAccount}
+          style={({ pressed }) => [
+            styles.deleteAccountBtn,
+            pressed && styles.pressed,
+          ]}
+        >
+          <Ionicons name="trash-outline" size={16} color={colors.coral} style={{ opacity: 0.8 }} />
+          <Text style={[styles.deleteAccountText, { color: colors.coral }]}>Delete Account Permanently</Text>
+        </Pressable>
+
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* ── Custom Avatar Action Bottom Sheet ── */}
+      <Modal
+        visible={showAvatarModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowAvatarModal(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setShowAvatarModal(false)}
+        >
+          <Pressable
+            style={[styles.modalSheet, { backgroundColor: colors.cardSurface, borderColor: colors.cardBorder }]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Profile Photo</Text>
+              <Text style={[styles.modalSub, { color: colors.textSecondary }]}>Select photo source or remove photo</Text>
+            </View>
+
+            <Pressable
+              onPress={handleGalleryPick}
+              style={({ pressed }) => [styles.modalActionBtn, { backgroundColor: colors.background }, pressed && styles.pressed]}
+            >
+              <Ionicons name="images-outline" size={20} color={colors.textPrimary} />
+              <Text style={[styles.modalActionText, { color: colors.textPrimary }]}>Choose from Library</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={handleCameraPick}
+              style={({ pressed }) => [styles.modalActionBtn, { backgroundColor: colors.background, marginTop: 8 }, pressed && styles.pressed]}
+            >
+              <Ionicons name="camera-outline" size={20} color={colors.textPrimary} />
+              <Text style={[styles.modalActionText, { color: colors.textPrimary }]}>Take Photo</Text>
+            </Pressable>
+
+            {(localAvatarUri || profile?.avatar_url) ? (
+              <Pressable
+                onPress={handleRemoveAvatar}
+                style={({ pressed }) => [
+                  styles.modalActionBtn,
+                  { backgroundColor: 'rgba(225, 87, 79, 0.1)', borderColor: 'rgba(225, 87, 79, 0.3)', borderWidth: 1, marginTop: 8 },
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Ionicons name="trash-outline" size={20} color={colors.coral} />
+                <Text style={[styles.modalActionText, { color: colors.coral }]}>Remove Photo</Text>
+              </Pressable>
+            ) : null}
+
+            <Pressable
+              onPress={() => setShowAvatarModal(false)}
+              style={({ pressed }) => [styles.modalCancelBtn, { backgroundColor: colors.cardBorder, marginTop: 14 }, pressed && styles.pressed]}
+            >
+              <Ionicons name="close-circle-outline" size={20} color={colors.textPrimary} />
+              <Text style={[styles.modalCancelText, { color: colors.textPrimary }]}>Cancel</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 };
@@ -408,7 +516,63 @@ const styles = StyleSheet.create({
 
   signOutBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
-    height: 52, borderRadius: R, borderWidth: BW,
+    height: 52, borderRadius: R, borderWidth: BW, marginBottom: 12,
   },
   signOutText: { fontSize: 15, fontWeight: '800' },
+  deleteAccountBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    paddingVertical: 12, marginTop: 4,
+  },
+  deleteAccountText: { fontSize: 13, fontWeight: '600', textDecorationLine: 'underline' },
+
+  // Modal Sheet
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: BW,
+    padding: 24,
+    paddingBottom: 36,
+  },
+  modalHeader: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  modalSub: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  modalActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 50,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  modalActionText: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  modalCancelBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 48,
+    borderRadius: 14,
+    gap: 8,
+  },
+  modalCancelText: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
 });

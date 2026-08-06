@@ -86,7 +86,15 @@ export const signInWithGoogle = async () => {
 };
 
 export const resetPasswordForEmail = async (email: string) => {
-  const { data, error } = await supabase.auth.resetPasswordForEmail(email.trim());
+  const redirectUrl = AuthSession.makeRedirectUri({
+    scheme: 'tripsy',
+    path: 'auth/reset-password',
+  });
+
+  const { data, error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+    redirectTo: redirectUrl,
+  });
+
   if (error) {
     throw new Error(error.message);
   }
@@ -138,4 +146,16 @@ export const updateProfile = async (
     .eq('id', userId);
 
   if (error) throw new Error(error.message);
+};
+
+export const deleteAccount = async (userId: string): Promise<void> => {
+  const { error: rpcError } = await supabase.rpc('delete_user_account');
+  if (rpcError) {
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('id', userId);
+    if (profileError) throw new Error(profileError.message);
+  }
+  await supabase.auth.signOut();
 };

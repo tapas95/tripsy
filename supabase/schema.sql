@@ -25,8 +25,20 @@ create table public.profiles (
 create function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id, name, email)
-  values (new.id, coalesce(new.raw_user_meta_data->>'name', 'New User'), new.email);
+  insert into public.profiles (id, name, email, avatar_url)
+  values (
+    new.id,
+    coalesce(
+      new.raw_user_meta_data->>'full_name',
+      new.raw_user_meta_data->>'name',
+      'New User'
+    ),
+    new.email,
+    coalesce(
+      new.raw_user_meta_data->>'avatar_url',
+      new.raw_user_meta_data->>'picture'
+    )
+  );
   return new;
 end;
 $$ language plpgsql security definer;
@@ -277,6 +289,14 @@ begin
   on conflict (trip_id, user_id) do nothing;
 
   return query select * from public.trips where id = v_trip.id;
+end;
+$$ language plpgsql security definer;
+
+-- RPC FUNCTION: DELETE USER ACCOUNT
+create or replace function public.delete_user_account()
+returns void as $$
+begin
+  delete from auth.users where id = auth.uid();
 end;
 $$ language plpgsql security definer;
 

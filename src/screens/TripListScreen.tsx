@@ -7,6 +7,7 @@ import {
   RefreshControl,
   Pressable,
   TextInput,
+  Image,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -55,11 +56,18 @@ export const TripListScreen: React.FC<TripListScreenProps> = ({
             hitSlop={8}
             style={({ pressed }) => [styles.leftGroup, pressed && { opacity: 0.8 }]}
           >
-            <View style={[styles.iconCircle, { backgroundColor: colors.glowMarigold, marginRight: 10 }]}>
-              <Text style={[styles.avatarInitial, { color: colors.marigold }]}>
-                {displayName.charAt(0).toUpperCase()}
-              </Text>
-            </View>
+            {profile?.avatar_url ? (
+              <Image
+                source={{ uri: profile.avatar_url, cache: 'reload' }}
+                style={[styles.iconCircle, { marginRight: 10 }]}
+              />
+            ) : (
+              <View style={[styles.iconCircle, { backgroundColor: colors.glowMarigold, marginRight: 10 }]}>
+                <Text style={[styles.avatarInitial, { color: colors.marigold }]}>
+                  {displayName.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            )}
             <View style={styles.greetingGroup}>
               <Text style={[styles.greetingLabel, { color: colors.textSecondary }]}>Good journey,</Text>
               <Text style={[styles.greetingName, { color: colors.textPrimary }]} numberOfLines={1}>

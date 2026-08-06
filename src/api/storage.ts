@@ -45,6 +45,9 @@ export const uploadReceipt = async (
   });
 
   if (response.status < 200 || response.status >= 300) {
+    if (response.body && (response.body.includes('Bucket not found') || response.body.includes('not_found'))) {
+      throw new Error("Storage bucket 'receipts' does not exist. Please create the 'receipts' bucket in your Supabase Dashboard under Storage.");
+    }
     throw new Error(`Upload failed (${response.status}): ${response.body}`);
   }
 
@@ -106,6 +109,7 @@ export const uploadAvatar = async (
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error('Not authenticated');
 
+  const timestamp = Date.now();
   const filePath  = `${userId}.jpg`;
   const uploadUrl = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/${AVATAR_BUCKET}/${filePath}`;
 
@@ -126,11 +130,19 @@ export const uploadAvatar = async (
     throw new Error(`Avatar upload failed (${response.status}): ${response.body}`);
   }
 
-  // Public bucket → getPublicUrl never expires; no signed URL needed.
+  // Public bucket → getPublicUrl with timestamp to break image caching
   const { data } = supabase.storage
     .from(AVATAR_BUCKET)
     .getPublicUrl(filePath);
 
-  return data.publicUrl;
+  return `${data.publicUrl}?t=${timestamp}`;
+};
+
+/**
+ * Deletes the user's avatar image from the avatars bucket.
+ */
+export const deleteAvatar = async (userId: string): Promise<void> => {
+  const filePath = `${userId}.jpg`;
+  await supabase.storage.from(AVATAR_BUCKET).remove([filePath]);
 };
 

@@ -225,11 +225,21 @@ export const AppNavigator: React.FC = () => {
     // Process incoming deep links (tripsy://join?code=XYZ or tripsy://invite/XYZ)
     const handleUrl = (event: { url: string }) => {
       if (!event.url) return;
+      // Ignore authentication callback URLs
+      if (event.url.includes('auth/') || event.url.includes('access_token')) return;
+
       try {
         const parsed = new URL(event.url.replace('#', '?'));
-        const code = parsed.searchParams.get('code') || parsed.pathname.split('/').pop();
-        if (code && code.length >= 4) {
-          setPendingInviteCode(code);
+        const isInvitePath = parsed.pathname.includes('join') || parsed.pathname.includes('invite');
+        const codeParam = parsed.searchParams.get('code');
+
+        if (codeParam && isInvitePath) {
+          setPendingInviteCode(codeParam);
+        } else if (isInvitePath) {
+          const code = parsed.pathname.split('/').pop();
+          if (code && code !== 'join' && code !== 'invite' && code.length >= 4) {
+            setPendingInviteCode(code);
+          }
         }
       } catch (err) {
         console.warn('Failed to parse deep link URL:', err);
