@@ -76,6 +76,9 @@ export const createTrip = async (tripData: {
 
 export const joinTripByCode = async (inviteCode: string, userId: string): Promise<Trip> => {
   const cleanCode = inviteCode.trim();
+  if (!cleanCode) {
+    throw new Error('Please enter an invite code.');
+  }
 
   // Try RPC first (security definer bypasses SELECT policy for non-members)
   const { data: rpcTrip, error: rpcError } = await (supabase as any).rpc('join_trip_by_code', {
@@ -91,6 +94,9 @@ export const joinTripByCode = async (inviteCode: string, userId: string): Promis
 
   if (rpcError) {
     console.warn('join_trip_by_code RPC error:', rpcError.message);
+    if (rpcError.message.includes('Invalid invite code') || rpcError.message.includes('No trip found')) {
+      throw new Error('Invalid invite code. No trip found.');
+    }
   }
 
   // Fallback if RPC function is not created in DB yet
@@ -101,7 +107,7 @@ export const joinTripByCode = async (inviteCode: string, userId: string): Promis
 
   if (tripError || !trip) {
     if (rpcError) {
-      throw new Error(`Could not join trip. Please ensure database RPC 'join_trip_by_code' is created in Supabase.`);
+      throw new Error(`Invalid invite code or SQL RPC missing. Please run schema.sql in Supabase SQL Editor.`);
     }
     throw new Error('Invalid invite code. No trip found.');
   }
@@ -113,7 +119,7 @@ export const joinTripByCode = async (inviteCode: string, userId: string): Promis
   });
 
   if (joinError) {
-    if (joinError.code === '23505') {
+    if (joinError.code === '23505' || joinError.message.includes('duplicate')) {
       throw new Error('You are already a member of this trip.');
     }
     throw new Error(joinError.message);

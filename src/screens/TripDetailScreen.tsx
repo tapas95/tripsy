@@ -10,6 +10,7 @@ import {
   Share,
   Alert,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -48,6 +49,7 @@ export const TripDetailScreen: React.FC<TripDetailScreenProps> = ({
   const [activeTab, setActiveTab] = useState<'expenses' | 'balances'>('expenses');
   const [settlingId, setSettlingId] = useState<string | null>(null);
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  const [showMembersSheet, setShowMembersSheet] = useState(false);
 
   const totalSpent = expenses.reduce((s, e) => s + Number(e.amount), 0);
   const isOwner    = trip.role === 'owner';
@@ -169,6 +171,66 @@ export const TripDetailScreen: React.FC<TripDetailScreenProps> = ({
             </Text>
           </View>
         </View>
+
+        {/* ── Members Bar ── */}
+        <Pressable
+          onPress={() => setShowMembersSheet(true)}
+          style={({ pressed }) => [
+            styles.membersBar,
+            { borderTopColor: colors.cardBorder },
+            pressed && { opacity: 0.8 },
+          ]}
+        >
+          <View style={styles.membersAvatarsRow}>
+            {members.slice(0, 4).map((m, idx) => (
+              <View
+                key={m.id}
+                style={[
+                  styles.stackedAvatar,
+                  {
+                    backgroundColor: m.role === 'owner' ? colors.glowMarigold : colors.glowTeal,
+                    borderColor: colors.cardSurface,
+                    marginLeft: idx > 0 ? -10 : 0,
+                    zIndex: 10 - idx,
+                  },
+                ]}
+              >
+                <Text style={[styles.stackedAvatarText, { color: m.role === 'owner' ? colors.marigold : colors.teal }]}>
+                  {m.name.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            ))}
+            {members.length > 4 && (
+              <View style={[styles.stackedAvatarMore, { backgroundColor: colors.background, borderColor: colors.cardBorder, marginLeft: -10 }]}>
+                <Text style={[styles.stackedAvatarMoreText, { color: colors.textSecondary }]}>+{members.length - 4}</Text>
+              </View>
+            )}
+          </View>
+
+          <View style={{ flex: 1, marginLeft: 10 }}>
+            <Text style={[styles.membersBarTitle, { color: colors.textPrimary }]}>
+              {members.length} {members.length === 1 ? 'Member' : 'Members'}
+            </Text>
+            <Text style={[styles.membersBarSub, { color: colors.textSecondary }]} numberOfLines={1}>
+              {members.map((m) => m.name.split(' ')[0]).join(', ')}
+            </Text>
+          </View>
+
+          <Pressable
+            onPress={(e) => {
+              e.stopPropagation();
+              setShowAddMemberModal(true);
+            }}
+            style={({ pressed }) => [
+              styles.invitePillBtn,
+              { backgroundColor: colors.glowMarigold },
+              pressed && { opacity: 0.8 },
+            ]}
+          >
+            <Ionicons name="person-add" size={12} color={colors.marigold} />
+            <Text style={[styles.invitePillText, { color: colors.marigold }]}>+ Invite</Text>
+          </Pressable>
+        </Pressable>
       </View>
 
       {/* ── Tabs ── */}
@@ -341,6 +403,82 @@ export const TripDetailScreen: React.FC<TripDetailScreenProps> = ({
           <Text style={styles.fabText}>Add Expense</Text>
         </Pressable>
       </View>
+
+      {/* ── Members Roster Sheet ── */}
+      <Modal
+        visible={showMembersSheet}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setShowMembersSheet(false)}
+        statusBarTranslucent
+      >
+        <Pressable style={styles.sheetOverlay} onPress={() => setShowMembersSheet(false)}>
+          <Pressable
+            style={[styles.rosterSheet, { backgroundColor: colors.cardSurface, borderColor: colors.cardBorder }]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.rosterHeader}>
+              <View>
+                <Text style={[styles.rosterTitle, { color: colors.textPrimary }]}>Trip Members</Text>
+                <Text style={[styles.rosterSub, { color: colors.textSecondary }]}>
+                  {members.length} people in {trip.name}
+                </Text>
+              </View>
+              <Pressable onPress={() => setShowMembersSheet(false)} hitSlop={10} style={styles.closeBtn}>
+                <Ionicons name="close" size={20} color={colors.textSecondary} />
+              </Pressable>
+            </View>
+
+            <ScrollView style={styles.rosterList} showsVerticalScrollIndicator={false}>
+              {members.map((m) => {
+                const isOwnerRow = m.role === 'owner';
+                return (
+                  <View key={m.id} style={[styles.rosterRow, { borderColor: colors.cardBorder }]}>
+                    <View style={[styles.rosterAvatar, { backgroundColor: isOwnerRow ? colors.glowMarigold : colors.glowTeal }]}>
+                      <Text style={[styles.rosterAvatarText, { color: isOwnerRow ? colors.marigold : colors.teal }]}>
+                        {m.name.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.rosterName, { color: colors.textPrimary }]}>{m.name}</Text>
+                      <Text style={[styles.rosterRoleText, { color: colors.textSecondary }]}>
+                        {isOwnerRow ? 'Trip Owner / Admin' : 'Trip Member'}
+                      </Text>
+                    </View>
+
+                    <View style={[styles.roleBadge, { backgroundColor: isOwnerRow ? colors.glowMarigold : colors.glowTeal }]}>
+                      <Ionicons
+                        name={isOwnerRow ? 'star-outline' : 'person-outline'}
+                        size={11}
+                        color={isOwnerRow ? colors.marigold : colors.teal}
+                      />
+                      <Text style={[styles.roleBadgeText, { color: isOwnerRow ? colors.marigold : colors.teal }]}>
+                        {isOwnerRow ? 'Owner' : 'Member'}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </ScrollView>
+
+            <Pressable
+              onPress={() => {
+                setShowMembersSheet(false);
+                setShowAddMemberModal(true);
+              }}
+              style={({ pressed }) => [
+                styles.addMemberFullBtn,
+                { backgroundColor: colors.marigold },
+                pressed && { opacity: 0.88 },
+              ]}
+            >
+              <Ionicons name="person-add" size={16} color="#1B2430" />
+              <Text style={styles.addMemberFullBtnText}>+ Invite New Member</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <AddMemberModal
         visible={showAddMemberModal}
@@ -553,6 +691,154 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#F7F6F3',
     textAlign: 'center',
+  },
+
+  // Members Bar
+  membersBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+  },
+  membersAvatarsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  stackedAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  stackedAvatarText: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  stackedAvatarMore: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  stackedAvatarMoreText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  membersBarTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  membersBarSub: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  invitePillBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  invitePillText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+
+  // Roster Sheet
+  sheetOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'flex-end',
+  },
+  rosterSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1.5,
+    padding: 20,
+    maxHeight: '80%',
+  },
+  rosterHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  rosterTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  rosterSub: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  closeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  rosterList: {
+    maxHeight: 280,
+    marginBottom: 16,
+  },
+  rosterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    gap: 12,
+  },
+  rosterAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  rosterAvatarText: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  rosterName: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  rosterRoleText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  roleBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  roleBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  addMemberFullBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 48,
+    borderRadius: 14,
+    gap: 8,
+  },
+  addMemberFullBtnText: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#1B2430',
   },
 });
 
