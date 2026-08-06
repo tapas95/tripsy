@@ -15,12 +15,15 @@ import { Button } from './Button';
 import { DatePickerInput } from './DatePickerInput';
 import { useTrips } from '../hooks/useTrips';
 
+import { Trip } from '../types/database';
+
 interface CreateTripModalProps {
   visible: boolean;
   onClose: () => void;
+  onTripCreated?: (trip: Trip) => void;
 }
 
-export const CreateTripModal: React.FC<CreateTripModalProps> = ({ visible, onClose }) => {
+export const CreateTripModal: React.FC<CreateTripModalProps> = ({ visible, onClose, onTripCreated }) => {
   const { colors } = useTheme();
   const { createTrip, isCreating } = useTrips();
   const [name, setName] = useState('');
@@ -37,7 +40,7 @@ export const CreateTripModal: React.FC<CreateTripModalProps> = ({ visible, onClo
     }
 
     try {
-      await createTrip({
+      const newTrip = await createTrip({
         name,
         currency,
         startDate: startDate ? startDate.toISOString().split('T')[0] : undefined,
@@ -47,6 +50,9 @@ export const CreateTripModal: React.FC<CreateTripModalProps> = ({ visible, onClo
       setStartDate(null);
       setEndDate(null);
       onClose();
+      if (onTripCreated && newTrip) {
+        onTripCreated(newTrip);
+      }
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to create trip.');
     }
@@ -102,7 +108,7 @@ export const CreateTripModal: React.FC<CreateTripModalProps> = ({ visible, onClo
           </View>
 
           <Button
-            title="Create Trip"
+            title="Create & Invite Members"
             onPress={handleCreate}
             isLoading={isCreating}
             style={styles.submitBtn}

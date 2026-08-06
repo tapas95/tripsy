@@ -23,6 +23,7 @@ import { BalancesScreen } from '../screens/BalancesScreen';
 import { CreateTripModal } from '../components/CreateTripModal';
 import { JoinTripModal } from '../components/JoinTripModal';
 import { AddExpenseModal } from '../components/AddExpenseModal';
+import { AddMemberModal } from '../components/AddMemberModal';
 
 import { TripWithRole } from '../api/trips';
 import { ExpenseWithDetails } from '../api/expenses';
@@ -191,6 +192,15 @@ const AppStack: React.FC<{ pendingInviteCode?: string; onClearInviteCode?: () =>
       <CreateTripModal
         visible={showCreateModal}
         onClose={() => setShowCreateModal(false)}
+        onTripCreated={(newTrip) => {
+          setCreatedTripForInvite({ id: newTrip.id, name: newTrip.name, inviteCode: newTrip.invite_code });
+        }}
+      />
+      <AddMemberModal
+        visible={!!createdTripForInvite}
+        tripName={createdTripForInvite?.name ?? ''}
+        inviteCode={createdTripForInvite?.inviteCode ?? ''}
+        onClose={() => setCreatedTripForInvite(null)}
       />
       <JoinTripModal
         visible={showJoinModal}
@@ -221,6 +231,7 @@ export const AppNavigator: React.FC = () => {
   const { colors } = useTheme();
   const [splashFinished, setSplashFinished] = useState(false);
   const [pendingInviteCode, setPendingInviteCode] = useState<string>('');
+  const [createdTripForInvite, setCreatedTripForInvite] = useState<{ id: string; name: string; inviteCode: string } | null>(null);
 
   React.useEffect(() => {
     // Process incoming deep links (tripsy://join?code=XYZ or tripsy://invite/XYZ)
