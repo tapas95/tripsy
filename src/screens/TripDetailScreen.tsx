@@ -15,6 +15,7 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme';
+import { useAuth } from '../hooks/useAuth';
 import { TripWithRole } from '../api/trips';
 import { useExpenses } from '../hooks/useExpenses';
 import { useTripMembers } from '../hooks/useTripMembers';
@@ -51,8 +52,9 @@ export const TripDetailScreen: React.FC<TripDetailScreenProps> = ({
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [showMembersSheet, setShowMembersSheet] = useState(false);
 
+  const { user }   = useAuth();
   const totalSpent = expenses.reduce((s, e) => s + Number(e.amount), 0);
-  const isOwner    = trip.role === 'owner';
+  const isOwner    = trip.role === 'owner' || trip.created_by === user?.id;
 
   const memberMap = useMemo(() =>
     Object.fromEntries(members.map((m) => [m.id, m.name])),
@@ -102,7 +104,7 @@ export const TripDetailScreen: React.FC<TripDetailScreenProps> = ({
         <Pressable onPress={handleShare} style={styles.navBtn} hitSlop={10}>
           <Ionicons name="share-social-outline" size={22} color={colors.marigold} />
         </Pressable>
-        {isOwner && onSettingsPress && (
+        {onSettingsPress && (
           <Pressable onPress={onSettingsPress} style={styles.navBtn} hitSlop={10}>
             <Ionicons name="settings-outline" size={22} color={colors.textSecondary} />
           </Pressable>
@@ -112,32 +114,8 @@ export const TripDetailScreen: React.FC<TripDetailScreenProps> = ({
       {/* ── Info Card ── */}
       <View style={[styles.infoCard, { backgroundColor: colors.cardSurface, borderBottomColor: colors.cardBorder }]}>
 
-        {/* Badges row */}
-        <View style={styles.badgeRow}>
-          <View style={[styles.pill, { backgroundColor: isOwner ? colors.glowMarigold : colors.glowTeal }]}>
-            <Ionicons
-              name={isOwner ? 'star-outline' : 'people-outline'}
-              size={12}
-              color={isOwner ? colors.marigold : colors.teal}
-            />
-            <Text style={[styles.pillText, { color: isOwner ? colors.marigold : colors.teal }]}>
-              {isOwner ? 'Owner' : 'Member'}
-            </Text>
-          </View>
-
-          <Pressable
-            onPress={handleCopyCode}
-            style={[styles.pill, { backgroundColor: colors.glowTeal }]}
-          >
-            <Ionicons name="key-outline" size={12} color={colors.teal} />
-            <Text style={[styles.pillText, { color: colors.teal, fontFamily: 'IBMPlexMono-Medium' }]}>
-              {trip.invite_code}
-            </Text>
-          </Pressable>
-        </View>
-
         {/* Stats row */}
-        <View style={[styles.statsRow, { borderTopColor: colors.cardBorder }]}>
+        <View style={styles.statsRow}>
           {/* Total Spent */}
           <View style={styles.statItem}>
             <View style={styles.statIconRow}>

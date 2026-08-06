@@ -44,6 +44,8 @@ export const TripSettingsScreen: React.FC<TripSettingsScreenProps> = ({ trip, on
     trip.end_date ? new Date(trip.end_date) : null
   );
 
+  const isOwner = trip.role === 'owner' || trip.created_by === user?.id;
+
   const invalidateTrips = () =>
     queryClient.invalidateQueries({ queryKey: ['trips'] });
 
@@ -263,29 +265,46 @@ export const TripSettingsScreen: React.FC<TripSettingsScreenProps> = ({ trip, on
           })}
         </View>
 
-        {/* ── Danger Zone (owner only) ── */}
-        {trip.role === 'owner' && (
-          <>
-            <Text style={[styles.sectionLabel, { color: colors.coral }]}>DANGER ZONE</Text>
-            <Pressable
-              onPress={handleDeleteTrip}
-              disabled={deleteMutation.isPending}
-              style={({ pressed }) => [
-                styles.deleteBtn,
-                { borderColor: 'rgba(225,87,79,0.4)', backgroundColor: 'rgba(225,87,79,0.08)' },
-                pressed && styles.pressed,
-              ]}
-            >
-              {deleteMutation.isPending
-                ? <ActivityIndicator color={colors.coral} />
-                : (
-                  <>
-                    <Ionicons name="trash-outline" size={18} color={colors.coral} />
-                    <Text style={[styles.deleteBtnText, { color: colors.coral }]}>Delete Trip</Text>
-                  </>
-                )}
-            </Pressable>
-          </>
+        {/* ── Danger Zone ── */}
+        <Text style={[styles.sectionLabel, { color: colors.coral }]}>DANGER ZONE</Text>
+        {isOwner ? (
+          <Pressable
+            onPress={handleDeleteTrip}
+            disabled={deleteMutation.isPending}
+            style={({ pressed }) => [
+              styles.deleteBtn,
+              { borderColor: 'rgba(225,87,79,0.4)', backgroundColor: 'rgba(225,87,79,0.08)' },
+              pressed && styles.pressed,
+            ]}
+          >
+            {deleteMutation.isPending
+              ? <ActivityIndicator color={colors.coral} />
+              : (
+                <>
+                  <Ionicons name="trash-outline" size={18} color={colors.coral} />
+                  <Text style={[styles.deleteBtnText, { color: colors.coral }]}>Delete Trip</Text>
+                </>
+              )}
+          </Pressable>
+        ) : (
+          <Pressable
+            onPress={() => user && handleRemoveMember(user.id, 'yourself')}
+            disabled={removeMutation.isPending}
+            style={({ pressed }) => [
+              styles.deleteBtn,
+              { borderColor: 'rgba(225,87,79,0.4)', backgroundColor: 'rgba(225,87,79,0.08)' },
+              pressed && styles.pressed,
+            ]}
+          >
+            {removeMutation.isPending
+              ? <ActivityIndicator color={colors.coral} />
+              : (
+                <>
+                  <Ionicons name="log-out-outline" size={18} color={colors.coral} />
+                  <Text style={[styles.deleteBtnText, { color: colors.coral }]}>Leave Trip</Text>
+                </>
+              )}
+          </Pressable>
         )}
 
         <View style={{ height: 40 }} />
