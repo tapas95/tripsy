@@ -99,6 +99,7 @@ const AppStack: React.FC<{ pendingInviteCode?: string; onClearInviteCode?: () =>
   const [showAddExpense, setShowAddExpense]   = useState(false);
   const [activeTripId, setActiveTripId]       = useState<string>('');
   const [inviteCode, setInviteCode]           = useState<string>('');
+  const [createdTripForInvite, setCreatedTripForInvite] = useState<{ id: string; name: string; inviteCode: string } | null>(null);
 
   React.useEffect(() => {
     if (pendingInviteCode) {
@@ -231,7 +232,6 @@ export const AppNavigator: React.FC = () => {
   const { colors } = useTheme();
   const [splashFinished, setSplashFinished] = useState(false);
   const [pendingInviteCode, setPendingInviteCode] = useState<string>('');
-  const [createdTripForInvite, setCreatedTripForInvite] = useState<{ id: string; name: string; inviteCode: string } | null>(null);
 
   React.useEffect(() => {
     // Process incoming deep links (tripsy://join?code=XYZ or tripsy://invite/XYZ)
