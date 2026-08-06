@@ -501,30 +501,13 @@ const styles = StyleSheet.create({
   // Info card
   infoCard: {
     paddingHorizontal: PAD_H,
-    paddingTop: 14,
+    paddingTop: 10,
     borderBottomWidth: 1,
   },
-  badgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 14,
-    gap: 8,
-  },
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 20,
-    gap: 5,
-  },
-  pillText: { fontSize: 12, fontWeight: '700' },
-
   statsRow: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    paddingVertical: 14,
-    borderTopWidth: 1,
+    paddingVertical: 10,
   },
   statItem: {
     flex: 1,
@@ -675,8 +658,8 @@ const styles = StyleSheet.create({
   membersBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 0,
+    paddingVertical: 10,
     borderTopWidth: 1,
   },
   membersAvatarsRow: {
