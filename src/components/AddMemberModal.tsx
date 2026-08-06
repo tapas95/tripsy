@@ -16,6 +16,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme';
 import { getDeviceContacts, DeviceContact } from '../utils/contacts';
+import { copyToClipboard } from '../utils/clipboard';
 
 interface AddMemberModalProps {
   visible: boolean;
@@ -80,14 +81,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({
   };
 
   const handleCopyCode = async () => {
-    try {
-      const Clipboard = require('expo-clipboard');
-      if (Clipboard && typeof Clipboard.setStringAsync === 'function') {
-        await Clipboard.setStringAsync(inviteCode);
-      }
-    } catch (_) {
-      // Fallback if native Clipboard module is missing in current dev build
-    }
+    await copyToClipboard(inviteCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

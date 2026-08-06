@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from '../theme';
 import { useAuth } from '../context/AuthContext';
+import { getClipboardString } from '../utils/clipboard';
 
 // Screens
 import { SplashScreen } from '../screens/SplashScreen';
@@ -251,21 +252,14 @@ export const AppNavigator: React.FC = () => {
     });
 
     // Auto-detect invite code from device clipboard on app launch
-    try {
-      const Clipboard = require('expo-clipboard');
-      if (Clipboard && typeof Clipboard.getStringAsync === 'function') {
-        Clipboard.getStringAsync().then((text: string) => {
-          if (text && (text.includes('tripsy://join?code=') || text.includes('code:'))) {
-            const match = text.match(/code[=:\s]+([A-Z0-9]{4,10})/i);
-            if (match && match[1]) {
-              setPendingInviteCode(match[1].toUpperCase());
-            }
-          }
-        }).catch(() => {});
+    getClipboardString().then((text) => {
+      if (text && (text.includes('tripsy://join?code=') || text.includes('code:'))) {
+        const match = text.match(/code[=:\s]+([A-Z0-9]{4,10})/i);
+        if (match && match[1]) {
+          setPendingInviteCode(match[1].toUpperCase());
+        }
       }
-    } catch (_) {
-      // Native module ExpoClipboard not present in current dev client build
-    }
+    }).catch(() => {});
 
     const subscription = Linking.addEventListener('url', handleUrl);
     return () => subscription.remove();

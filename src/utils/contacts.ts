@@ -1,9 +1,29 @@
+import { NativeModules } from 'react-native';
+
 export interface DeviceContact {
   id: string;
   name: string;
   phone: string | null;
   email: string | null;
 }
+
+/**
+ * Checks if ExpoContacts native module is actually compiled into the app binary
+ */
+export const isContactsAvailable = (): boolean => {
+  try {
+    const globalExpo = (global as any)?.expo?.modules;
+    if (globalExpo && (globalExpo.ExpoContacts || globalExpo.ExpoContactsModule)) {
+      return true;
+    }
+    if (NativeModules && (NativeModules.ExpoContacts || NativeModules.ExpoContactsModule)) {
+      return true;
+    }
+    return false;
+  } catch (_) {
+    return false;
+  }
+};
 
 /**
  * Normalizes phone number into E.164 international format (+1234567890)
@@ -18,6 +38,7 @@ export const normalizePhoneNumber = (phone: string): string => {
  * Requests device contacts permission from OS
  */
 export const requestContactsPermission = async (): Promise<boolean> => {
+  if (!isContactsAvailable()) return false;
   try {
     const Contacts = require('expo-contacts');
     if (!Contacts || typeof Contacts.requestPermissionsAsync !== 'function') return false;
@@ -32,6 +53,7 @@ export const requestContactsPermission = async (): Promise<boolean> => {
  * Fetches contacts list from device
  */
 export const getDeviceContacts = async (searchQuery?: string): Promise<DeviceContact[]> => {
+  if (!isContactsAvailable()) return [];
   try {
     const Contacts = require('expo-contacts');
     if (!Contacts || typeof Contacts.getContactsAsync !== 'function') return [];
