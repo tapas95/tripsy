@@ -153,6 +153,36 @@ See `tokens.ts` and `tailwind.config.js` (already generated) for full values. Su
 
 ---
 
+---
+
+## Real-World Member Management & Advanced Expense Splitting (Implementation Spec)
+
+### 1. Real-World Member Invitations & Joining Flow
+- **Phone Contacts Integration (`expo-contacts`)**: 
+  - Ability to pick a friend directly from phone contacts in `AddMemberModal`.
+  - Automatically populates contact Name & Phone / Email.
+  - Generates pre-filled SMS / WhatsApp invitation message with 1-tap deep link.
+- **Native 1-Tap Share Sheet (`Share.share`)**:
+  - Direct sharing via WhatsApp, Messages, Email, Telegram, AirDrop.
+- **Phone Number Matching on Sign-Up & Profile**:
+  - Added Phone Number (`phone`) field on `SignUpScreen` and `ProfileScreen` (E.164 format: `+919876543210`).
+  - Automatic trip matching: When a user registers with a phone number that matches `invited_phone`, Supabase automatically connects them to the trip!
+- **App-Not-Installed Journey (Clipboard Auto-Detection & Post-Signup Auto-Claim)**:
+  - If an invited friend installs the app, on first launch the app inspects the Clipboard (`expo-clipboard`) for invite links (`tripsy://join?code=XYZ`).
+  - Immediately after registration, the app prompts: *"🎉 You have a pending invitation to [Trip Name]! [Join Trip]"*.
+
+### 2. Advanced 4-Mode Expense Splitting
+- **Equal Split (with Member Toggles)**:
+  - Checkboxes (`[✓] Member`) next to each member to split equally only among participating members.
+- **Exact Amounts**:
+  - Custom currency input per member with live `Allocated: ₹X / Total: ₹Y` validation badge.
+- **Percentages (%)**:
+  - % input per member with automatic 100% total validator.
+- **Shares / Ratios**:
+  - Steppers (`1x`, `2x`) for proportional splitting (e.g. 2 shares for couples, 1 share for individuals).
+
+---
+
 ## Out of Scope (explicitly not v1)
 - Multi-currency conversion within a single trip (single currency per trip)
 - Bill splitting across trips (splits are always scoped to one trip)
