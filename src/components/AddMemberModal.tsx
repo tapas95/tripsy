@@ -36,7 +36,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({
   onAddMemberByName,
 }) => {
   const { colors } = useTheme();
-  const [activeTab, setActiveTab] = useState<TabType>('contacts');
+  const [activeTab, setActiveTab] = useState<TabType>(isContactsAvailable() ? 'contacts' : 'share');
 
   // Contacts state
   const [contacts, setContacts] = useState<DeviceContact[]>([]);
@@ -67,7 +67,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({
     }
   };
 
-  const shareText = `Join my trip '${tripName}' on Tripsy! Tap here: tripsy://join?code=${inviteCode} (or enter code: ${inviteCode} in app)`;
+  const shareText = `🧳 Join my trip "${tripName}" on Tripsy!\n\n📋 Invite Code: ${inviteCode}\n\nOpen Tripsy → Tap "Join Trip" → Enter the code above.\n\nDon't have the app yet? Download Tripsy and use code ${inviteCode} to join!`;
 
   const handleShareLink = async () => {
     try {
@@ -242,7 +242,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({
                   <Ionicons name="phone-portrait-outline" size={38} color={colors.marigold} />
                   <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Phone Contacts</Text>
                   <Text style={[styles.emptySub, { color: colors.textSecondary }]}>
-                    To access device contacts directly, rebuild dev client binary (`npx expo run:android`). Or tap Share Link or Add by Name below!
+                    Contacts access is available in the full app build. For now, use Share Link to send the invite code, or Add by Name to add members manually.
                   </Text>
                   <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
                     <Pressable
