@@ -19,7 +19,8 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.tap1995.tripsy"
+      "package": "com.tap1995.tripsy",
+      "versionCode": 1
     },
     "web": {
       "favicon": "./assets/favicon.png"
